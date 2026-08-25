@@ -3,66 +3,115 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+
   <title>Gestão de Processos | Seabra/BA</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 
 <body>
 
+  <!-- ========================================================= -->
   <!-- LOGIN -->
+  <!-- ========================================================= -->
+
   <section id="loginView" class="login-shell">
+
     <div class="login-card">
+
       <div class="brand-mark">GP</div>
 
       <h1>Gestão de Processos</h1>
+
       <p>Prefeitura Municipal de Seabra/BA</p>
 
       <form id="loginForm">
+
         <label>
           E-mail
-          <input id="email" type="email" autocomplete="username" required>
+          <input
+            id="email"
+            type="email"
+            autocomplete="username"
+            required>
         </label>
 
         <label>
           Senha
-          <input id="password" type="password" autocomplete="current-password" required>
+          <input
+            id="password"
+            type="password"
+            autocomplete="current-password"
+            required>
         </label>
 
-        <button type="submit" class="primary full">Entrar</button>
+        <button
+          type="submit"
+          class="primary full">
+          Entrar
+        </button>
 
         <small id="loginMsg"></small>
+
       </form>
+
     </div>
+
   </section>
 
 
+  <!-- ========================================================= -->
   <!-- SISTEMA -->
+  <!-- ========================================================= -->
+
   <div id="appView" class="hidden">
+
+
+    <!-- CABEÇALHO -->
 
     <header class="topbar">
 
       <div class="system-title">
+
         <strong>Gestão de Processos</strong>
-        <span>Prefeitura Municipal de Seabra/BA</span>
+
+        <span>
+          Prefeitura Municipal de Seabra/BA
+        </span>
+
       </div>
 
+
       <div class="user-area">
+
         <span id="userBadge"></span>
-        <button id="logoutBtn" class="ghost">Sair</button>
+
+        <button
+          id="logoutBtn"
+          class="ghost">
+          Sair
+        </button>
+
       </div>
 
     </header>
 
 
+    <!-- ========================================================= -->
     <!-- MENU PRINCIPAL -->
+    <!-- Ordem definida: Licitações | Planejamento | Compras -->
+    <!-- ========================================================= -->
+
     <nav class="main-nav">
 
       <button
@@ -73,6 +122,7 @@
         Licitações
       </button>
 
+
       <button
         type="button"
         id="navPlanejamento"
@@ -80,6 +130,7 @@
         data-module="planejamento">
         Planejamento
       </button>
+
 
       <button
         type="button"
@@ -94,31 +145,48 @@
 
     <main class="container">
 
-      <!-- ========================================================= -->
-      <!-- MÓDULO PLANEJAMENTO -->
-      <!-- ========================================================= -->
 
-      <section id="moduloPlanejamento" class="module-view">
+      <!-- ===================================================== -->
+      <!-- MÓDULO PLANEJAMENTO -->
+      <!-- ===================================================== -->
+
+      <section
+        id="moduloPlanejamento"
+        class="module-view">
+
 
         <section class="hero-row">
 
           <div>
+
             <h2>Controle de Planejamento</h2>
+
             <p>
               Acompanhamento das demandas, prazos, cotações,
               responsáveis e encaminhamento dos processos.
             </p>
+
           </div>
 
-          <button id="newBtn" class="primary editor-only">
+
+          <button
+            id="newBtn"
+            class="primary editor-only">
             + Nova demanda
           </button>
 
         </section>
 
 
-        <section class="kpis" id="kpis"></section>
+        <!-- INDICADORES -->
 
+        <section
+          class="kpis"
+          id="kpis">
+        </section>
+
+
+        <!-- FILTROS -->
 
         <section class="toolbar">
 
@@ -126,5 +194,29 @@
             id="search"
             placeholder="Buscar demanda, secretaria, responsável...">
 
+
           <select id="statusFilter">
+
             <option value="">
+              Todas as situações
+            </option>
+
+          </select>
+
+
+          <select id="quoteFilter">
+
+            <option value="">
+              Todas as cotações
+            </option>
+
+            <option>Planejamento</option>
+            <option>Cotando</option>
+            <option>Cotado</option>
+
+          </select>
+
+
+          <button
+            id="clearFilters"
+            class="ghost">
