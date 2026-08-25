@@ -3,91 +3,128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Controle de Planejamento | Seabra/BA</title>
+  <title>Gestão de Processos | Seabra/BA</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
+
+  <!-- LOGIN -->
   <section id="loginView" class="login-shell">
     <div class="login-card">
-      <div class="brand-mark">PL</div>
-      <h1>Controle de Planejamento</h1>
+      <div class="brand-mark">GP</div>
+
+      <h1>Gestão de Processos</h1>
       <p>Prefeitura Municipal de Seabra/BA</p>
+
       <form id="loginForm">
-        <label>E-mail<input id="email" type="email" autocomplete="username" required></label>
-        <label>Senha<input id="password" type="password" autocomplete="current-password" required></label>
+        <label>
+          E-mail
+          <input id="email" type="email" autocomplete="username" required>
+        </label>
+
+        <label>
+          Senha
+          <input id="password" type="password" autocomplete="current-password" required>
+        </label>
+
         <button type="submit" class="primary full">Entrar</button>
+
         <small id="loginMsg"></small>
       </form>
     </div>
   </section>
 
+
+  <!-- SISTEMA -->
   <div id="appView" class="hidden">
+
     <header class="topbar">
-      <div><strong>Controle de Planejamento</strong><span>Licitações, Planejamento e Compras · Seabra/BA</span></div>
-      <div class="user-area"><span id="userBadge"></span><button id="logoutBtn" class="ghost">Sair</button></div>
+
+      <div class="system-title">
+        <strong>Gestão de Processos</strong>
+        <span>Prefeitura Municipal de Seabra/BA</span>
+      </div>
+
+      <div class="user-area">
+        <span id="userBadge"></span>
+        <button id="logoutBtn" class="ghost">Sair</button>
+      </div>
+
     </header>
 
+
+    <!-- MENU PRINCIPAL -->
+    <nav class="main-nav">
+
+      <button
+        type="button"
+        id="navLicitacoes"
+        class="nav-btn"
+        data-module="licitacoes">
+        Licitações
+      </button>
+
+      <button
+        type="button"
+        id="navPlanejamento"
+        class="nav-btn active"
+        data-module="planejamento">
+        Planejamento
+      </button>
+
+      <button
+        type="button"
+        id="navCompras"
+        class="nav-btn"
+        data-module="compras">
+        Compras
+      </button>
+
+    </nav>
+
+
     <main class="container">
-      <section class="hero-row">
-        <div><h2>Processos em planejamento e licitação</h2><p>Acompanhamento da carteira, prazos, cotações e envio à licitação.</p></div>
-        <button id="newBtn" class="primary editor-only">+ Nova demanda</button>
-      </section>
 
-      <section class="kpis" id="kpis"></section>
+      <!-- ========================================================= -->
+      <!-- MÓDULO PLANEJAMENTO -->
+      <!-- ========================================================= -->
 
-      <section class="toolbar">
-        <input id="search" placeholder="Buscar demanda, secretaria, responsável...">
-        <select id="statusFilter"><option value="">Todas as situações</option></select>
-        <select id="quoteFilter"><option value="">Todas as cotações</option><option>Planejamento</option><option>Cotando</option><option>Cotado</option></select>
-        <button id="clearFilters" class="ghost">Limpar</button>
-        <div class="toolbar-spacer"></div>
-        <button id="exportBtn" class="ghost">Excel</button>
-        <button id="printBtn" class="ghost">Imprimir / PDF</button>
-      </section>
+      <section id="moduloPlanejamento" class="module-view">
 
-      <section class="table-card">
-        <div class="table-wrap">
-          <table>
-            <thead><tr>
-              <th>Nº</th><th>Demanda</th><th>Secretaria</th><th>Tipo</th><th>Modalidade</th><th>Cotação</th><th>Início</th><th>Limite</th><th>Envio licitação</th><th>Valor</th><th>Responsável</th><th>Situação</th><th>Ações</th>
-            </tr></thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-        <div id="emptyState" class="empty hidden">Nenhuma demanda encontrada.</div>
-      </section>
-    </main>
-  </div>
+        <section class="hero-row">
 
-  <dialog id="itemDialog">
-    <form id="itemForm" method="dialog">
-      <div class="dialog-head"><h3 id="dialogTitle">Nova demanda</h3><button type="button" id="closeDialog" class="icon">×</button></div>
-      <input type="hidden" id="itemId">
-      <div class="form-grid">
-        <label class="span-2">Nome da Demanda<input id="f_nome" required></label>
-        <label>Secretaria(s)<input id="f_secretaria"></label>
-        <label>Tipo de Objeto<select id="f_tipo"><option value=""></option><option>Bem</option><option>Serviço</option><option>Obra</option><option>Serviço de Engenharia</option></select></label>
-        <label>Modalidade Prevista<input id="f_modalidade"></label>
-        <label>Situação das Cotações<select id="f_cotacoes"><option value=""></option><option>Planejamento</option><option>Cotando</option><option>Cotado</option></select></label>
-        <label>Data de Início do Planejamento<input id="f_inclusao" type="date"></label>
-        <label>Data Limite do Planejamento<input id="f_limite" type="date"></label>
-        <label>Data de Envio à Licitação<input id="f_envio" type="date"></label>
-        <label>Valor Estimado (R$)<input id="f_valor" type="number" min="0" step="0.01"></label>
-        <label>Responsável Interno<input id="f_responsavel"></label>
-        <label>Situação Geral<select id="f_status"><option value=""></option><option>Planejamento</option><option>Cotando</option><option>Cotado</option><option>Aguard. Autorização</option><option>Enviado p/ Licitação</option><option>Edital Publicado</option><option>Concluído</option><option>Suspenso</option><option>Cancelado</option></select></label>
-        <label class="span-2">Impedimentos<textarea id="f_impedimentos" rows="2"></textarea></label>
-        <label class="span-2">Observações<textarea id="f_obs" rows="3"></textarea></label>
-      </div>
-      <div class="dialog-actions"><button type="button" id="cancelBtn" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar</button></div>
-    </form>
-  </dialog>
+          <div>
+            <h2>Controle de Planejamento</h2>
+            <p>
+              Acompanhamento das demandas, prazos, cotações,
+              responsáveis e encaminhamento dos processos.
+            </p>
+          </div>
 
-  <script src="config.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+          <button id="newBtn" class="primary editor-only">
+            + Nova demanda
+          </button>
+
+        </section>
+
+
+        <section class="kpis" id="kpis"></section>
+
+
+        <section class="toolbar">
+
+          <input
+            id="search"
+            placeholder="Buscar demanda, secretaria, responsável...">
+
+          <select id="statusFilter">
+            <option value="">
