@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gestão de Processos | Seabra/BA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="styles.css?v=12" />
+</head>
+<body>
+  <section id="loginView" class="login-shell">
+    <div class="login-card">
+      <div class="brand-mark">GP</div>
+      <h1>Gestão de Processos</h1>
+      <p>Prefeitura Municipal de Seabra/BA</p>
+      <form id="loginForm">
+        <label>E-mail<input id="email" type="email" autocomplete="username" required></label>
+        <label>Senha<input id="password" type="password" autocomplete="current-password" required></label>
+        <button id="loginBtn" type="submit" class="primary full">Entrar</button>
+        <small id="loginMsg" class="login-msg"></small>
+      </form>
+    </div>
+  </section>
+
+  <div id="appView" class="hidden">
+    <header class="topbar">
+      <div class="system-title">
+        <strong>Gestão de Processos</strong>
+        <span>Prefeitura Municipal de Seabra/BA</span>
+      </div>
+      <div class="user-area">
+        <span id="userBadge"></span>
+        <button id="logoutBtn" type="button" class="ghost">Sair</button>
+      </div>
+    </header>
+
+    <nav class="main-nav">
+      <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Licitações</button>
+      <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento">Planejamento</button>
+      <button type="button" id="navCompras" class="nav-btn" data-module="compras">Compras</button>
+    </nav>
+
+    <main class="container">
+      <section id="moduloLicitacoes" class="module-view hidden">
+        <section class="hero-row">
+          <div><h2>Licitações</h2><p>Processos recebidos automaticamente do Planejamento e contagem da etapa licitatória.</p></div>
+        </section>
+        <section class="kpis" id="licitacaoKpis"></section>
+        <section class="result-summary"><span id="licitacaoResultCount">0 processos</span><span>O prazo começa no envio pelo Planejamento.</span></section>
+        <section class="table-card"><div class="table-wrap"><table>
+          <thead><tr><th>Processo</th><th>Objeto</th><th>Secretaria</th><th>Modalidade</th><th>Enviado</th><th>Dias em Licitações</th><th>Recebimento</th><th>Recebido por</th><th>Ação</th></tr></thead>
+          <tbody id="licitacaoTbody"></tbody>
+        </table></div><div id="licitacaoEmpty" class="empty hidden">Nenhum processo encaminhado para Licitações.</div></section>
+      </section>
+
+      <section id="moduloPlanejamento" class="module-view">
+        <section class="hero-row">
+          <div>
+            <h2>Planejamento</h2>
+            <p>Controle das demandas, prazos, cotações, responsáveis, impedimentos e encaminhamentos.</p>
+          </div>
+          <button type="button" id="newBtn" class="primary editor-only">+ Nova demanda</button>
+        </section>
+
+        <section class="kpis" id="kpis"></section>
+
+        <section class="scope-bar">
+          <button type="button" id="scopeOngoing" class="scope-btn active">Processos em andamento</button>
+          <button type="button" id="scopeAll" class="scope-btn">Todos os processos</button>
+        </section>
+
+        <section class="toolbar toolbar-grid">
+          <input id="search" type="search" placeholder="Buscar demanda, secretaria, responsável, observação...">
+          <select id="statusFilter"><option value="">Situação geral</option></select>
+          <select id="quoteFilter"><option value="">Cotação</option><option>Planejamento</option><option>Cotando</option><option>Cotado</option></select>
+          <select id="secretariaFilter"><option value="">Secretaria</option></select>
+          <select id="responsavelFilter"><option value="">Responsável</option></select>
+          <select id="tipoFilter"><option value="">Tipo</option></select>
+          <select id="modalidadeFilter"><option value="">Modalidade</option></select>
+          <select id="visaoFilter"><option value="andamento">Em andamento</option><option value="todos">Todos os processos</option><option value="enviados">Finalizados no Planejamento / enviados</option></select>
+          <select id="prazoFilter">
+            <option value="">Prazo</option>
+            <option value="atrasado">Atrasados</option>
+            <option value="vence7">Vence em até 7 dias úteis</option>
+            <option value="noprazo">No prazo</option>
+            <option value="enviado">Enviados</option>
+            <option value="semlimite">Sem data limite</option>
+          </select>
+          <button id="clearFilters" type="button" class="ghost">Limpar filtros</button>
+          <div class="toolbar-spacer"></div>
+          <button id="exportBtn" type="button" class="ghost">Excel</button>
+          <button id="printBtn" type="button" class="ghost">Imprimir / PDF</button>
+        </section>
+
+        <section class="result-summary">
+          <span id="resultCount">0 processos</span>
+          <span id="filterHint">Ordenação: prioridade de prazo</span>
+        </section>
+
+        <section class="table-card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nº</th><th>Demanda</th><th>Secretaria</th><th>Tipo</th><th>Modalidade</th><th>Cotação</th><th>Prazo</th><th>Envio</th><th>Valor</th><th>Responsável</th><th>Situação</th><th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+          <div id="emptyState" class="empty hidden">Nenhuma demanda encontrada.</div>
+        </section>
+      </section>
+
+      <section id="moduloCompras" class="module-view hidden">
+        <section class="module-placeholder"><h3>Módulo Compras</h3><p>Será concluído após a finalização do módulo Planejamento.</p></section>
+      </section>
+    </main>
+  </div>
+
+  <datalist id="responsaveisList">
+    <option value="Jhonata Cerqueira"></option>
+    <option value="Monica Ramos"></option>
+    <option value="Mabilia Anjos"></option>
+    <option value="Leidiana"></option>
+  </datalist>
+
+  <datalist id="secretariasList"></datalist>
+  <datalist id="modalidadesList"></datalist>
+
+  <dialog id="itemDialog">
+    <form id="itemForm">
+      <div class="dialog-head"><h3 id="dialogTitle">Nova demanda</h3><button type="button" id="closeDialog" class="icon">×</button></div>
+      <input type="hidden" id="itemId">
+      <div class="form-grid">
+        <label class="span-2">Nome da Demanda<input id="f_nome" required></label>
+        <label>Secretaria(s)<input id="f_secretaria" list="secretariasList"></label>
+        <label>Tipo de Objeto<select id="f_tipo"><option value=""></option><option>Bem</option><option>Serviço</option><option>Obra</option><option>Serviço de Engenharia</option></select></label>
+        <label>Modalidade Prevista<input id="f_modalidade" list="modalidadesList"></label>
+        <label>Situação das Cotações<select id="f_cotacoes"><option value=""></option><option>Planejamento</option><option>Cotando</option><option>Cotado</option></select></label>
+        <label>Qtd. de Cotações Obtidas<input id="f_qtd_cotacoes" type="number" min="0" step="1"></label>
+        <label>Data de Início do Planejamento<input id="f_inclusao" type="date"></label>
+        <label>Prazo Interno (dias úteis)<input id="f_prazo_interno" type="number" min="1" step="1" value="20"></label>
+        <label>Data Limite do Planejamento<input id="f_limite" type="date"></label>
+        <label>Data de Envio à Licitação<input id="f_envio" type="date"></label>
+        <label>Valor Estimado (R$)<input id="f_valor" type="number" min="0" step="0.01"></label>
+        <label>Responsável Interno<input id="f_responsavel" list="responsaveisList"></label>
+        <label>Situação Geral<select id="f_status"><option value=""></option><option>Planejamento</option><option>Cotando</option><option>Cotado</option><option>Aguard. Autorização</option><option>Enviado p/ Licitação</option><option>Edital Publicado</option><option>Concluído</option><option>Suspenso</option><option>Cancelado</option></select></label>
+        <label class="span-2">Impedimentos<textarea id="f_impedimentos" rows="2"></textarea></label>
+        <label class="span-2">Observações<textarea id="f_obs" rows="3"></textarea></label>
+      </div>
+      <div class="dialog-actions"><button type="button" id="cancelBtn" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="detailDialog" class="detail-dialog">
+    <div class="detail-shell">
+      <div class="dialog-head"><div><small class="eyebrow">Ficha do planejamento</small><h3 id="detailTitle">Demanda</h3></div><button type="button" id="closeDetail" class="icon">×</button></div>
+      <div id="detailContent" class="detail-content"></div>
+      <div class="dialog-actions">
+        <button type="button" id="historyBtn" class="ghost">Histórico</button>
+        <button type="button" id="detailEditBtn" class="primary editor-only">Editar</button>
+        <button type="button" id="detailDeleteBtn" class="danger-btn admin-only">Excluir definitivamente</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="historyDialog" class="history-dialog">
+    <div class="detail-shell">
+      <div class="dialog-head"><div><small class="eyebrow">Auditoria</small><h3>Histórico de alterações</h3></div><button type="button" id="closeHistory" class="icon">×</button></div>
+      <div id="historyContent" class="history-list"></div>
+    </div>
+  </dialog>
+
+  <script src="config.js?v=12"></script>
+  <script src="app.js?v=12"></script>
+</body>
+</html>
