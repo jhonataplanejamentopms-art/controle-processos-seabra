@@ -2,126 +2,71 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gestão de Processos | Seabra/BA</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Controle de Planejamento | Seabra/BA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <section id="loginView" class="login-shell">
     <div class="login-card">
-      <div class="brand-mark">GP</div>
-      <h1>Gestão de Processos</h1>
+      <div class="brand-mark">PL</div>
+      <h1>Controle de Planejamento</h1>
       <p>Prefeitura Municipal de Seabra/BA</p>
       <form id="loginForm">
         <label>E-mail<input id="email" type="email" autocomplete="username" required></label>
         <label>Senha<input id="password" type="password" autocomplete="current-password" required></label>
-        <button id="loginBtn" type="submit" class="primary full">Entrar</button>
-        <small id="loginMsg" class="login-msg"></small>
+        <button type="submit" class="primary full">Entrar</button>
+        <small id="loginMsg"></small>
       </form>
     </div>
   </section>
 
   <div id="appView" class="hidden">
     <header class="topbar">
-      <div class="system-title">
-        <strong>Gestão de Processos</strong>
-        <span>Prefeitura Municipal de Seabra/BA</span>
-      </div>
-      <div class="user-area">
-        <span id="userBadge"></span>
-        <button id="logoutBtn" type="button" class="ghost">Sair</button>
-      </div>
+      <div><strong>Controle de Planejamento</strong><span>Licitações, Planejamento e Compras · Seabra/BA</span></div>
+      <div class="user-area"><span id="userBadge"></span><button id="logoutBtn" class="ghost">Sair</button></div>
     </header>
 
-    <nav class="main-nav">
-      <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Licitações</button>
-      <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento">Planejamento</button>
-      <button type="button" id="navCompras" class="nav-btn" data-module="compras">Compras</button>
-    </nav>
-
     <main class="container">
-      <section id="moduloLicitacoes" class="module-view hidden">
-        <section class="hero-row">
-          <div>
-            <h2>Controle de Licitações</h2>
-            <p>Acompanhamento dos processos licitatórios, publicações, sessões, julgamentos e homologações.</p>
-          </div>
-          <button type="button" id="newLicitacaoBtn" class="primary editor-only">+ Nova licitação</button>
-        </section>
-        <section class="module-placeholder">
-          <h3>Módulo Licitações</h3>
-          <p>Banco preparado. A interface completa será implantada na próxima etapa.</p>
-        </section>
+      <section class="hero-row">
+        <div><h2>Processos em planejamento e licitação</h2><p>Acompanhamento da carteira, prazos, cotações e envio à licitação.</p></div>
+        <button id="newBtn" class="primary editor-only">+ Nova demanda</button>
       </section>
 
-      <section id="moduloPlanejamento" class="module-view">
-        <section class="hero-row">
-          <div>
-            <h2>Controle de Planejamento</h2>
-            <p>Acompanhamento das demandas, prazos, cotações, responsáveis e encaminhamentos.</p>
-          </div>
-          <button type="button" id="newBtn" class="primary editor-only">+ Nova demanda</button>
-        </section>
+      <section class="kpis" id="kpis"></section>
 
-        <section class="kpis" id="kpis"></section>
-
-        <section class="toolbar">
-          <input id="search" type="search" placeholder="Buscar demanda, secretaria, responsável...">
-          <select id="statusFilter"><option value="">Todas as situações</option></select>
-          <select id="quoteFilter">
-            <option value="">Todas as cotações</option>
-            <option value="Planejamento">Planejamento</option>
-            <option value="Cotando">Cotando</option>
-            <option value="Cotado">Cotado</option>
-          </select>
-          <button id="clearFilters" type="button" class="ghost">Limpar</button>
-          <div class="toolbar-spacer"></div>
-          <button id="exportBtn" type="button" class="ghost">Excel</button>
-          <button id="printBtn" type="button" class="ghost">Imprimir / PDF</button>
-        </section>
-
-        <section class="table-card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nº</th><th>Demanda</th><th>Secretaria</th><th>Tipo</th><th>Modalidade</th><th>Cotação</th><th>Início</th><th>Limite</th><th>Envio licitação</th><th>Valor</th><th>Responsável</th><th>Situação</th><th>Ações</th>
-                </tr>
-              </thead>
-              <tbody id="tbody"></tbody>
-            </table>
-          </div>
-          <div id="emptyState" class="empty hidden">Nenhuma demanda encontrada.</div>
-        </section>
+      <section class="toolbar">
+        <input id="search" placeholder="Buscar demanda, secretaria, responsável...">
+        <select id="statusFilter"><option value="">Todas as situações</option></select>
+        <select id="quoteFilter"><option value="">Todas as cotações</option><option>Planejamento</option><option>Cotando</option><option>Cotado</option></select>
+        <button id="clearFilters" class="ghost">Limpar</button>
+        <div class="toolbar-spacer"></div>
+        <button id="exportBtn" class="ghost">Excel</button>
+        <button id="printBtn" class="ghost">Imprimir / PDF</button>
       </section>
 
-      <section id="moduloCompras" class="module-view hidden">
-        <section class="hero-row">
-          <div>
-            <h2>Controle de Compras</h2>
-            <p>Acompanhamento das pesquisas de preços, cotações, fornecedores, documentos e encaminhamentos.</p>
-          </div>
-          <button type="button" id="newCompraBtn" class="primary editor-only">+ Nova compra</button>
-        </section>
-        <section class="module-placeholder">
-          <h3>Módulo Compras</h3>
-          <p>Banco preparado. A interface completa será implantada na próxima etapa.</p>
-        </section>
+      <section class="table-card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nº</th><th>Demanda</th><th>Secretaria</th><th>Tipo</th><th>Modalidade</th><th>Cotação</th><th>Início</th><th>Limite</th><th>Envio licitação</th><th>Valor</th><th>Responsável</th><th>Situação</th><th>Ações</th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty hidden">Nenhuma demanda encontrada.</div>
       </section>
     </main>
   </div>
 
   <dialog id="itemDialog">
-    <form id="itemForm">
-      <div class="dialog-head">
-        <h3 id="dialogTitle">Nova demanda</h3>
-        <button type="button" id="closeDialog" class="icon">×</button>
-      </div>
+    <form id="itemForm" method="dialog">
+      <div class="dialog-head"><h3 id="dialogTitle">Nova demanda</h3><button type="button" id="closeDialog" class="icon">×</button></div>
       <input type="hidden" id="itemId">
       <div class="form-grid">
         <label class="span-2">Nome da Demanda<input id="f_nome" required></label>
@@ -138,14 +83,11 @@
         <label class="span-2">Impedimentos<textarea id="f_impedimentos" rows="2"></textarea></label>
         <label class="span-2">Observações<textarea id="f_obs" rows="3"></textarea></label>
       </div>
-      <div class="dialog-actions">
-        <button type="button" id="cancelBtn" class="ghost">Cancelar</button>
-        <button type="submit" class="primary">Salvar</button>
-      </div>
+      <div class="dialog-actions"><button type="button" id="cancelBtn" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar</button></div>
     </form>
   </dialog>
 
-  <script src="config.js?v=10"></script>
-  <script src="app.js?v=10"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
