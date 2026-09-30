@@ -63,7 +63,7 @@
             <h2>Planejamento</h2>
             <p>Controle das demandas, prazos, cotações, responsáveis, impedimentos e encaminhamentos.</p>
           </div>
-          <div class="hero-actions"><button type="button" id="importDemandasBtn" class="ghost editor-only">Atualizar demandas 30/09</button><button type="button" id="newBtn" class="primary editor-only">+ Nova demanda</button></div>
+          <div class="hero-actions"><button type="button" id="newBtn" class="primary editor-only">+ Nova demanda</button></div>
         </section>
 
         <section class="kpis" id="kpis"></section>
@@ -156,34 +156,6 @@
       </div>
       <div class="dialog-actions"><button type="button" id="cancelBtn" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar</button></div>
     </form>
-  </dialog>
-
-  <dialog id="importDialog" class="detail-dialog">
-    <div class="detail-shell">
-      <div class="dialog-head"><div><small class="eyebrow">Importação assistida</small><h3>Demandas de 30/09/2026</h3></div><button type="button" id="closeImport" class="icon">×</button></div>
-      <p class="muted">O sistema compara os nomes com a base atual. Revise as ações antes de confirmar.</p>
-      <div id="importContent" class="history-list"></div>
-      <div class="dialog-actions"><button type="button" id="cancelImport" class="ghost">Cancelar</button><button type="button" id="confirmImport" class="primary">Confirmar atualização</button></div>
-    </div>
-  </dialog>
-
-  <dialog id="detailDialog" class="detail-dialog">
-    <div class="detail-shell">
-      <div class="dialog-head"><div><small class="eyebrow">Ficha do planejamento</small><h3 id="detailTitle">Demanda</h3></div><button type="button" id="closeDetail" class="icon">×</button></div>
-      <div id="detailContent" class="detail-content"></div>
-      <div class="dialog-actions">
-        <button type="button" id="historyBtn" class="ghost">Histórico</button>
-        <button type="button" id="detailEditBtn" class="primary editor-only">Editar</button>
-        <button type="button" id="detailDeleteBtn" class="danger-btn admin-only">Excluir definitivamente</button>
-      </div>
-    </div>
-  </dialog>
-
-  <dialog id="historyDialog" class="history-dialog">
-    <div class="detail-shell">
-      <div class="dialog-head"><div><small class="eyebrow">Auditoria</small><h3>Histórico de alterações</h3></div><button type="button" id="closeHistory" class="icon">×</button></div>
-      <div id="historyContent" class="history-list"></div>
-    </div>
   </dialog>
 
   <script src="config.js?v=15093001"></script>
