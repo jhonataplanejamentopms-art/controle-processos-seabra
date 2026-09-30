@@ -40,6 +40,15 @@
       return count*sign;
     }
     function setLoginMsg(text,type=''){ const el=$('loginMsg'); if(el){ el.textContent=text||''; el.className=`login-msg ${type}`.trim(); } }
+    const NEXT_TAG='[PRÓXIMA PROVIDÊNCIA]';
+    function splitObs(v){
+      const s=String(v||''); const idx=s.indexOf(NEXT_TAG);
+      if(idx<0) return {obs:s,proxima:''};
+      const before=s.slice(0,idx).trim(); const after=s.slice(idx+NEXT_TAG.length).trim();
+      const end=after.indexOf('\n\n');
+      return end<0?{obs:before,proxima:after}:{obs:[before,after.slice(end+2).trim()].filter(Boolean).join('\n\n'),proxima:after.slice(0,end).trim()};
+    }
+    function joinObs(obs,proxima){ const o=String(obs||'').trim(),p=String(proxima||'').trim(); return [p?`${NEXT_TAG} ${p}`:'',o].filter(Boolean).join('\n\n')||null; }
 
     function deadlineInfo(x){
       if(x.data_envio_licitacao) return {key:'enviado',label:`Planejamento concluído · ${brDate(x.data_envio_licitacao)}`,class:'sent',priority:4,days:0};
@@ -73,7 +82,7 @@
       };
       return items.map(enriched).filter(x=>{
         if(planningScope==='ongoing' && x.data_envio_licitacao) return false;
-        const hay=[x.demanda,x.secretaria,x.responsavel,x.modalidade_prevista,x.observacoes,x.impedimentos].map(v=>(v||'').toLowerCase());
+        const hay=[x.demanda,x.secretaria,x.responsavel,x.modalidade_prevista,x.observacoes,x.impedimentos,splitObs(x.observacoes).proxima].map(v=>(v||'').toLowerCase());
         return (!q||hay.some(v=>v.includes(q))) &&
           (!filters.status||x.situacao_geral===filters.status) && (!filters.quote||x.situacao_cotacao===filters.quote) &&
           (!filters.secretaria||x.secretaria===filters.secretaria) && (!filters.responsavel||x.responsavel===filters.responsavel) &&
@@ -112,7 +121,7 @@
           <td><div class="demand-name"><span class="priority-dot ${x.deadline.key==='atrasado'?'red':x.deadline.key==='vence7'?'yellow':x.deadline.key==='enviado'?'green-strong':x.deadline.key==='noprazo'?'green':''}"></span>${esc(x.demanda)}</div>${x.impedimentos?`<small class="muted">Impedimento: ${esc(x.impedimentos)}</small>`:''}</td>
           <td>${esc(x.secretaria||'—')}</td><td>${esc(x.tipo_objeto||'—')}</td><td>${esc(x.modalidade_prevista||'—')}</td><td>${esc(x.situacao_cotacao||'—')}</td>
           <td>${brDate(x.data_limite_planejamento)}<br><span class="badge ${x.deadline.class}">${esc(x.deadline.label)}</span></td>
-          <td>${brDate(x.data_envio_licitacao)}</td><td class="money">${money(x.valor_estimado)}</td><td>${esc(x.responsavel||'—')}</td>
+          <td>${brDate(x.data_envio_licitacao)}</td><td class="money">${money(x.valor_estimado)}</td><td>${esc(x.responsavel||'—')}</td><td>${esc(splitObs(x.observacoes).proxima||'—')}</td>
           <td><span class="badge ${x.situacao_geral==='Concluído'?'ok':x.situacao_geral==='Suspenso'||x.situacao_geral==='Cancelado'?'neutral':''}">${esc(x.situacao_geral||'Sem status')}</span></td>
           <td><div class="actions editor-only"><button class="ghost" data-action="edit" data-id="${esc(x.id)}">Editar</button></div></td>
         </tr>`;
@@ -167,8 +176,8 @@
     }
 
     function openDialog(x={}){
-      const map={itemId:'id',f_nome:'demanda',f_secretaria:'secretaria',f_tipo:'tipo_objeto',f_modalidade:'modalidade_prevista',f_cotacoes:'situacao_cotacao',f_qtd_cotacoes:'qtd_cotacoes',f_inclusao:'data_inicio_planejamento',f_prazo_interno:'prazo_interno_dias',f_limite:'data_limite_planejamento',f_envio:'data_envio_licitacao',f_valor:'valor_estimado',f_responsavel:'responsavel',f_status:'situacao_geral',f_impedimentos:'impedimentos',f_obs:'observacoes'};
-      Object.entries(map).forEach(([id,k])=>{ if($(id)) $(id).value=x[k]??''; });
+      const map={itemId:'id',f_nome:'demanda',f_secretaria:'secretaria',f_tipo:'tipo_objeto',f_modalidade:'modalidade_prevista',f_cotacoes:'situacao_cotacao',f_qtd_cotacoes:'qtd_cotacoes',f_inclusao:'data_inicio_planejamento',f_prazo_interno:'prazo_interno_dias',f_limite:'data_limite_planejamento',f_envio:'data_envio_licitacao',f_valor:'valor_estimado',f_responsavel:'responsavel',f_status:'situacao_geral',f_impedimentos:'impedimentos'};
+      Object.entries(map).forEach(([id,k])=>{ if($(id)) $(id).value=x[k]??''; }); const so=splitObs(x.observacoes); if($('f_obs')) $('f_obs').value=so.obs; if($('f_proxima')) $('f_proxima').value=so.proxima;
       if(!x.id){ $('f_inclusao').value=new Date().toISOString().slice(0,10); $('f_prazo_interno').value='20'; $('f_limite').value=addBusinessDays($('f_inclusao').value,20); $('f_status').value='Planejamento'; }
       $('dialogTitle').textContent=x.id?'Editar demanda':'Nova demanda'; $('itemDialog').showModal();
     }
@@ -182,7 +191,7 @@
         ${detailField('Situação das cotações',esc(x.situacao_cotacao||'—'))}${detailField('Qtd. cotações',x.qtd_cotacoes??'—')}${detailField('Situação geral',`<span class="badge">${esc(x.situacao_geral||'Sem status')}</span>`)}
         ${detailField('Início',brDate(x.data_inicio_planejamento))}${detailField('Prazo interno',x.prazo_interno_dias?`${x.prazo_interno_dias} dias úteis`:'—')}${detailField('Data limite',`${brDate(x.data_limite_planejamento)}<br><span class="badge ${d.class}">${esc(d.label)}</span>`)}
         ${detailField('Envio à Licitação',brDate(x.data_envio_licitacao))}${detailField('Valor estimado',money(x.valor_estimado))}${detailField('Responsável',esc(x.responsavel||'—'))}
-        ${detailField('Impedimentos',esc(x.impedimentos||'Sem impedimentos'),'span-3')}${detailField('Observações',esc(x.observacoes||'Sem observações'),'span-3')}
+        ${detailField('Próxima providência',esc(splitObs(x.observacoes).proxima||'Sem providência registrada'),'span-3')}${detailField('Impedimentos',esc(x.impedimentos||'Sem impedimentos'),'span-3')}${detailField('Observações',esc(splitObs(x.observacoes).obs||'Sem observações'),'span-3')}
         ${detailField('Criado em',x.criado_em?new Date(x.criado_em).toLocaleString('pt-BR'):'—')}${detailField('Atualizado em',x.atualizado_em?new Date(x.atualizado_em).toLocaleString('pt-BR'):'—')}
       </div>`;
       applyRole(); $('detailDialog').showModal();
@@ -223,7 +232,7 @@
     $('clearFilters')?.addEventListener('click',()=>{ ['search','statusFilter','quoteFilter','secretariaFilter','responsavelFilter','tipoFilter','modalidadeFilter','prazoFilter'].forEach(id=>{if($(id))$(id).value='';}); render(); });
     $('printBtn')?.addEventListener('click',()=>window.print());
     $('exportBtn')?.addEventListener('click',()=>{
-      const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Qtd. Cotações':x.qtd_cotacoes,'Início':brDate(x.data_inicio_planejamento),'Prazo Interno':x.prazo_interno_dias,'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio à Licitação':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Observações':x.observacoes}));
+      const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Qtd. Cotações':x.qtd_cotacoes,'Início':brDate(x.data_inicio_planejamento),'Prazo Interno':x.prazo_interno_dias,'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio à Licitação':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Próxima Providência':splitObs(x.observacoes).proxima,'Observações':splitObs(x.observacoes).obs}));
       const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Planejamento'); XLSX.writeFile(wb,'planejamento_filtrado.xlsx');
     });
     $('newBtn')?.addEventListener('click',()=>openDialog()); $('closeDialog')?.addEventListener('click',()=>$('itemDialog').close()); $('cancelBtn')?.addEventListener('click',()=>$('itemDialog').close());
@@ -235,7 +244,7 @@
     $('detailDeleteBtn')?.addEventListener('click',async()=>{ if(profile.perfil!=='administrador'||!currentDetailId)return; if(!confirm('Excluir definitivamente esta demanda? Esta ação ficará registrada no histórico.'))return; const {error}=await client.from('planejamentos').delete().eq('id',currentDetailId); if(error)return alert(error.message); $('detailDialog').close(); await loadItems(); });
     $('itemForm')?.addEventListener('submit',async e=>{
       e.preventDefault(); const id=$('itemId').value;
-      const payload={demanda:$('f_nome').value.trim(),secretaria:$('f_secretaria').value.trim()||null,tipo_objeto:$('f_tipo').value||null,modalidade_prevista:$('f_modalidade').value.trim()||null,situacao_cotacao:$('f_cotacoes').value||null,qtd_cotacoes:$('f_qtd_cotacoes').value===''?null:Number($('f_qtd_cotacoes').value),data_inicio_planejamento:$('f_inclusao').value||null,prazo_interno_dias:$('f_prazo_interno').value===''?null:Number($('f_prazo_interno').value),data_limite_planejamento:$('f_limite').value||null,data_envio_licitacao:$('f_envio').value||null,valor_estimado:$('f_valor').value===''?null:Number($('f_valor').value),responsavel:$('f_responsavel').value.trim()||null,situacao_geral:$('f_status').value||null,impedimentos:$('f_impedimentos').value.trim()||null,observacoes:$('f_obs').value.trim()||null};
+      const payload={demanda:$('f_nome').value.trim(),secretaria:$('f_secretaria').value.trim()||null,tipo_objeto:$('f_tipo').value||null,modalidade_prevista:$('f_modalidade').value.trim()||null,situacao_cotacao:$('f_cotacoes').value||null,qtd_cotacoes:$('f_qtd_cotacoes').value===''?null:Number($('f_qtd_cotacoes').value),data_inicio_planejamento:$('f_inclusao').value||null,prazo_interno_dias:$('f_prazo_interno').value===''?null:Number($('f_prazo_interno').value),data_limite_planejamento:$('f_limite').value||null,data_envio_licitacao:$('f_envio').value||null,valor_estimado:$('f_valor').value===''?null:Number($('f_valor').value),responsavel:$('f_responsavel').value.trim()||null,situacao_geral:$('f_status').value||null,impedimentos:$('f_impedimentos').value.trim()||null,observacoes:joinObs($('f_obs').value,$('f_proxima').value)};
       if(payload.data_envio_licitacao) payload.situacao_geral='Enviado p/ Licitação';
       const res=id?await client.from('planejamentos').update(payload).eq('id',id):await client.from('planejamentos').insert(payload); if(res.error)return alert(res.error.message); $('itemDialog').close(); await loadItems(); if(profile.modulo_licitacoes) await loadLicitacoes();
     });
