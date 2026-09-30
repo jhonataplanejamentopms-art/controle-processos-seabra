@@ -180,7 +180,7 @@
           const p=importPlan[idx], action=document.querySelector(`[data-import-action="${idx}"]`)?.value||'skip';
           if(action==='skip') continue;
           if(action==='create'){
-            const payload={demanda:p.d.demanda,secretaria:p.d.secretaria||null,modalidade_prevista:p.d.modalidade_prevista||null,situacao_cotacao:'Planejamento',data_inicio_planejamento:'2026-09-30',prazo_interno_dias:20,data_limite_planejamento:addBusinessDays('2026-09-30',20),situacao_geral:'Planejamento',impedimentos:p.d.impedimentos||null,observacoes:joinObs(p.d.observacoes||'',p.d.proxima||'')};
+            const payload={demanda:p.d.demanda,secretaria:p.d.secretaria||null,modalidade_prevista:p.d.modalidade_prevista||null,situacao_cotacao:'Planejamento',data_inicio_planejamento:'2026-09-30',data_limite_planejamento:addBusinessDays('2026-09-30',20),situacao_geral:'Planejamento',impedimentos:p.d.impedimentos||null,observacoes:joinObs(p.d.observacoes||'',p.d.proxima||'')};
             const {error}=await client.from('planejamentos').insert(payload); if(error) throw new Error(`${p.d.demanda}: ${error.message}`);
           }else if(action==='update'&&p.match){
             const old=splitObs(p.match.observacoes);
