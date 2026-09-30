@@ -63,7 +63,7 @@
             <h2>Planejamento</h2>
             <p>Controle das demandas, prazos, cotações, responsáveis, impedimentos e encaminhamentos.</p>
           </div>
-          <div class="hero-actions"><button type="button" id="newBtn" class="primary editor-only">+ Nova demanda</button></div>
+          <div class="hero-actions"><button type="button" id="weeklyWhatsappBtn" class="ghost">📱 Resumo semanal</button><button type="button" id="newBtn" class="primary editor-only">+ Nova demanda</button></div>
         </section>
 
         <section class="kpis" id="kpis"></section>
@@ -157,8 +157,16 @@
       <div class="dialog-actions"><button type="button" id="cancelBtn" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar</button></div>
     </form>
   </dialog>
+  <dialog id="weeklyWhatsappDialog" class="detail-dialog">
+    <div class="dialog-card">
+      <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyWhatsapp" class="icon">×</button></div>
+      <p class="muted">Período automático: segunda-feira até o dia atual.</p>
+      <textarea id="weeklyWhatsappText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
+      <div class="dialog-actions"><button type="button" id="copyWeeklyWhatsapp" class="primary">Copiar resumo</button></div>
+    </div>
+  </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=15093003"></script>
+  <script src="app.js?v=15093004"></script>
 </body>
 </html>
