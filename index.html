@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=13" />
+  <link rel="stylesheet" href="styles.css?v=14" />
 </head>
 <body>
   <section id="loginView" class="login-shell">
@@ -63,7 +63,7 @@
             <h2>Planejamento</h2>
             <p>Controle das demandas, prazos, cotações, responsáveis, impedimentos e encaminhamentos.</p>
           </div>
-          <button type="button" id="newBtn" class="primary editor-only">+ Nova demanda</button>
+          <div class="hero-actions"><button type="button" id="importDemandasBtn" class="ghost editor-only">Atualizar demandas 30/09</button><button type="button" id="newBtn" class="primary editor-only">+ Nova demanda</button></div>
         </section>
 
         <section class="kpis" id="kpis"></section>
@@ -158,6 +158,15 @@
     </form>
   </dialog>
 
+  <dialog id="importDialog" class="detail-dialog">
+    <div class="detail-shell">
+      <div class="dialog-head"><div><small class="eyebrow">Importação assistida</small><h3>Demandas de 30/09/2026</h3></div><button type="button" id="closeImport" class="icon">×</button></div>
+      <p class="muted">O sistema compara os nomes com a base atual. Revise as ações antes de confirmar.</p>
+      <div id="importContent" class="history-list"></div>
+      <div class="dialog-actions"><button type="button" id="cancelImport" class="ghost">Cancelar</button><button type="button" id="confirmImport" class="primary">Confirmar atualização</button></div>
+    </div>
+  </dialog>
+
   <dialog id="detailDialog" class="detail-dialog">
     <div class="detail-shell">
       <div class="dialog-head"><div><small class="eyebrow">Ficha do planejamento</small><h3 id="detailTitle">Demanda</h3></div><button type="button" id="closeDetail" class="icon">×</button></div>
@@ -177,7 +186,7 @@
     </div>
   </dialog>
 
-  <script src="config.js?v=13"></script>
-  <script src="app.js?v=13"></script>
+  <script src="config.js?v=14"></script>
+  <script src="app.js?v=14"></script>
 </body>
 </html>
