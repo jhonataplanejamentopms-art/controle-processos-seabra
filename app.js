@@ -139,6 +139,63 @@
     }
     async function loadItems(){ if(!profile.modulo_planejamento){items=[];return;} const {data,error}=await client.from('planejamentos').select('*').order('numero',{ascending:true}); if(error) throw error; items=data||[]; refreshDynamicOptions(); render(); }
 
+
+    const demandas3009=[
+      {demanda:'Equipamentos Odontológicos – CEO',proxima:'Juntar com a demanda anterior de equipamentos odontológicos.',observacoes:'Consolidar com a demanda anterior de equipamentos odontológicos.'},
+      {demanda:'Assessoria de Convênios',proxima:'Finalizar DFD em rascunho e elaborar pesquisa ampla de mercado.',observacoes:'DFD em rascunho para finalizar.'},
+      {demanda:'Publicidade / Publicações',proxima:'Consolidar Jornal, DOU, PNCP, Transparência e demandas correlatas.',observacoes:'Jornal + DOU + PNCP + Transparência e demandas correlatas.'},
+      {demanda:'Carro de Som',modalidade_prevista:'Credenciamento',proxima:'Realizar pesquisa de preços.',observacoes:'Credenciamento.'},
+      {demanda:'Chaveiro',proxima:'Aguardar retorno de Sirleide.',impedimentos:'Aguardando retorno de Sirleide.'},
+      {demanda:'Material de Expediente',proxima:'Dar andamento à demanda de planejamento.'},
+      {demanda:'Material de Limpeza',proxima:'Dar andamento à demanda de planejamento.'},
+      {demanda:'Exames de Imagem',proxima:'Iniciar planejamento da nova demanda.',observacoes:'Demanda nova.'},
+      {demanda:'Manutenção de Eletros em Geral',proxima:'Analisar demanda encaminhada por Compras.',observacoes:'Demanda encaminhada por Compras.'},
+      {demanda:'Painel de LED e Correlatos',secretaria:'Educação',proxima:'Verificar e confirmar a demanda com a Educação.'},
+      {demanda:'Playgrounds',proxima:'Aguardar retorno de Perla e verificar a situação.',impedimentos:'Aguardando retorno de Perla.'},
+      {demanda:'Serviço de Recarga de Impressoras',proxima:'Dar andamento à demanda de planejamento.'},
+      {demanda:'Conectores RJ e Correlatos',secretaria:'Educação',proxima:'Verificar com Perla a alteração da DFD (não emergencial).',observacoes:'Demanda da Educação; não emergencial.'},
+      {demanda:'Cadeira de Rodas',proxima:'Verificar com Perla o tamanho/especificação e alterar a DFD.'},
+      {demanda:'Equipamentos da Saúde',secretaria:'Saúde',proxima:'Acompanhar apoio da Saúde nas cotações dos itens específicos.',observacoes:'Já solicitado à Saúde apoio nas cotações de itens específicos: ar-condicionado, bomba de infusão e demais equipamentos correlatos.'}
+    ];
+    let importPlan=[];
+    function normName(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+    function importPreview(){
+      importPlan=demandas3009.map(d=>{
+        const n=normName(d.demanda);
+        const exact=items.find(x=>normName(x.demanda)===n);
+        const similar=!exact?items.find(x=>{const a=normName(x.demanda); return a&&n&&(a.includes(n)||n.includes(a));}):null;
+        return {d,match:exact||similar||null,action:exact?'update':similar?'review':'create'};
+      });
+      $('importContent').innerHTML=importPlan.map((p,idx)=>`<div class="history-item">
+        <div class="history-meta"><strong>${idx+1}. ${esc(p.d.demanda)}</strong><span class="badge ${p.action==='create'?'ok':p.action==='update'?'info':'warn'}">${p.action==='create'?'Nova':p.action==='update'?'Atualizar existente':'Possível duplicidade'}</span></div>
+        ${p.match?`<div class="history-changes">Encontrado: <strong>${esc(p.match.demanda)}</strong></div>`:''}
+        <label>Ação <select data-import-action="${idx}"><option value="create" ${p.action==='create'?'selected':''}>Criar nova</option>${p.match?`<option value="update" ${p.action!=='create'?'selected':''}>Atualizar “${esc(p.match.demanda)}”</option>`:''}<option value="skip">Ignorar</option></select></label>
+      </div>`).join('');
+      $('importDialog').showModal();
+    }
+    async function runImport(){
+      const btn=$('confirmImport'); btn.disabled=true; btn.textContent='Atualizando...';
+      try{
+        for(let idx=0;idx<importPlan.length;idx++){
+          const p=importPlan[idx], action=document.querySelector(`[data-import-action="${idx}"]`)?.value||'skip';
+          if(action==='skip') continue;
+          if(action==='create'){
+            const payload={demanda:p.d.demanda,secretaria:p.d.secretaria||null,modalidade_prevista:p.d.modalidade_prevista||null,situacao_cotacao:'Planejamento',data_inicio_planejamento:'2026-09-30',prazo_interno_dias:20,data_limite_planejamento:addBusinessDays('2026-09-30',20),situacao_geral:'Planejamento',impedimentos:p.d.impedimentos||null,observacoes:joinObs(p.d.observacoes||'',p.d.proxima||'')};
+            const {error}=await client.from('planejamentos').insert(payload); if(error) throw new Error(`${p.d.demanda}: ${error.message}`);
+          }else if(action==='update'&&p.match){
+            const old=splitObs(p.match.observacoes);
+            const payload={observacoes:joinObs(p.d.observacoes||old.obs,p.d.proxima||old.proxima)};
+            if(p.d.secretaria&&!p.match.secretaria) payload.secretaria=p.d.secretaria;
+            if(p.d.modalidade_prevista&&!p.match.modalidade_prevista) payload.modalidade_prevista=p.d.modalidade_prevista;
+            if(p.d.impedimentos) payload.impedimentos=p.d.impedimentos;
+            const {error}=await client.from('planejamentos').update(payload).eq('id',p.match.id); if(error) throw new Error(`${p.d.demanda}: ${error.message}`);
+          }
+        }
+        $('importDialog').close(); await loadItems(); if(profile.modulo_licitacoes) await loadLicitacoes(); alert('Demandas atualizadas com sucesso.');
+      }catch(err){alert('Erro na atualização: '+(err?.message||err));}
+      finally{btn.disabled=false;btn.textContent='Confirmar atualização';}
+    }
+
     function showModule(module){
       ['Licitacoes','Planejamento','Compras'].forEach(n=>$(`modulo${n}`)?.classList.add('hidden'));
       $(`modulo${module.charAt(0).toUpperCase()+module.slice(1)}`)?.classList.remove('hidden');
@@ -235,6 +292,7 @@
       const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Qtd. Cotações':x.qtd_cotacoes,'Início':brDate(x.data_inicio_planejamento),'Prazo Interno':x.prazo_interno_dias,'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio à Licitação':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Próxima Providência':splitObs(x.observacoes).proxima,'Observações':splitObs(x.observacoes).obs}));
       const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Planejamento'); XLSX.writeFile(wb,'planejamento_filtrado.xlsx');
     });
+    $('importDemandasBtn')?.addEventListener('click',importPreview); $('closeImport')?.addEventListener('click',()=>$('importDialog').close()); $('cancelImport')?.addEventListener('click',()=>$('importDialog').close()); $('confirmImport')?.addEventListener('click',runImport);
     $('newBtn')?.addEventListener('click',()=>openDialog()); $('closeDialog')?.addEventListener('click',()=>$('itemDialog').close()); $('cancelBtn')?.addEventListener('click',()=>$('itemDialog').close());
     $('f_inclusao')?.addEventListener('change',()=>{ if($('f_inclusao').value&&$('f_prazo_interno').value) $('f_limite').value=addBusinessDays($('f_inclusao').value,$('f_prazo_interno').value); });
     $('f_prazo_interno')?.addEventListener('change',()=>{ if($('f_inclusao').value&&$('f_prazo_interno').value) $('f_limite').value=addBusinessDays($('f_inclusao').value,$('f_prazo_interno').value); });
