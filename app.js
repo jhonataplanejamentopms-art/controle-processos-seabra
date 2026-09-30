@@ -131,6 +131,33 @@
       renderKpis(); applyRole();
     }
 
+    function weekRange(){
+      const now=new Date(); now.setHours(12,0,0,0);
+      const back=now.getDay()===0?6:now.getDay()-1;
+      const start=new Date(now); start.setDate(now.getDate()-back);
+      return {start,end:new Date(now),startIso:start.toISOString().slice(0,10),endIso:now.toISOString().slice(0,10)};
+    }
+    async function buildWeeklyWhatsapp(){
+      const r=weekRange(), all=items.map(enriched);
+      const active=all.filter(x=>!x.data_envio_licitacao&&!['Concluído','Cancelado','Suspenso'].includes(x.situacao_geral));
+      const sent=all.filter(x=>{const d=dateOnly(x.data_envio_licitacao);return d&&d>=r.start&&d<=r.end;});
+      let concluded=[];
+      try{
+        const {data,error}=await client.from('historico_planejamentos').select('*').gte('criado_em',r.startIso+'T00:00:00').lte('criado_em',r.endIso+'T23:59:59');
+        if(!error&&data){
+          const ids=new Set(data.filter(h=>h.dados_novos?.situacao_geral==='Concluído'&&h.dados_anteriores?.situacao_geral!=='Concluído').map(h=>String(h.planejamento_id)));
+          concluded=all.filter(x=>ids.has(String(x.id)));
+        }
+      }catch(_){}
+      const overdue=active.filter(x=>x.deadline.key==='atrasado'), impeded=active.filter(x=>(x.impedimentos||'').trim()), due7=active.filter(x=>x.deadline.key==='vence7');
+      const next=active.filter(x=>splitObs(x.observacoes).proxima).slice(0,8);
+      const fmt=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+      const list=(arr,fn)=>arr.length?arr.map(x=>'• '+fn(x)).join('\n'):'• Nenhuma';
+      const attention=[...new Map([...overdue,...impeded].map(x=>[String(x.id),x])).values()].slice(0,8);
+      return ['📊 *ACOMPANHAMENTO SEMANAL – PLANEJAMENTO*','📅 Período: '+fmt(r.start)+' a '+fmt(r.end),'','📌 *CENÁRIO ATUAL*','• Demandas em andamento: '+active.length,'• Em cotação: '+active.filter(x=>x.situacao_cotacao==='Cotando').length,'• Atrasadas: '+overdue.length,'• Com impedimento: '+impeded.length,'• A vencer em 7 dias: '+due7.length,'','✅ *ENVIADAS À LICITAÇÃO NA SEMANA*',list(sent,x=>x.demanda+' — '+brDate(x.data_envio_licitacao)),'','🏁 *CONCLUÍDAS NA SEMANA*',list(concluded,x=>x.demanda),'','⚠️ *PONTOS DE ATENÇÃO*',list(attention,x=>x.demanda+' — '+(x.impedimentos||x.deadline.label)),'','📋 *PRÓXIMAS PROVIDÊNCIAS*',list(next,x=>x.demanda+' — '+splitObs(x.observacoes).proxima),'','🏛️ Planejamento | Prefeitura Municipal de Seabra'].join('\n');
+    }
+    async function openWeeklyWhatsapp(){ const ta=$('weeklyWhatsappText'); ta.value='Gerando resumo...'; $('weeklyWhatsappDialog').showModal(); ta.value=await buildWeeklyWhatsapp(); }
+
     async function loadProfile(){
       const {data:{user},error:userError}=await client.auth.getUser(); if(userError) throw userError; if(!user) throw new Error('Usuário não autenticado.');
       const {data,error}=await client.from('perfis').select('perfil,nome,ativo,modulo_planejamento,modulo_compras,modulo_licitacoes,pode_receber_licitacao').eq('id',user.id).single();
@@ -292,6 +319,9 @@
       const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Qtd. Cotações':x.qtd_cotacoes,'Início':brDate(x.data_inicio_planejamento),'Prazo Interno':x.prazo_interno_dias,'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio à Licitação':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Próxima Providência':splitObs(x.observacoes).proxima,'Observações':splitObs(x.observacoes).obs}));
       const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Planejamento'); XLSX.writeFile(wb,'planejamento_filtrado.xlsx');
     });
+    $('weeklyWhatsappBtn')?.addEventListener('click',openWeeklyWhatsapp);
+    $('closeWeeklyWhatsapp')?.addEventListener('click',()=>$('weeklyWhatsappDialog').close());
+    $('copyWeeklyWhatsapp')?.addEventListener('click',async()=>{ try{await navigator.clipboard.writeText($('weeklyWhatsappText').value); alert('Resumo copiado.');}catch(_){$('weeklyWhatsappText').select(); document.execCommand('copy'); alert('Resumo copiado.');} });
     $('importDemandasBtn')?.addEventListener('click',importPreview); $('closeImport')?.addEventListener('click',()=>$('importDialog').close()); $('cancelImport')?.addEventListener('click',()=>$('importDialog').close()); $('confirmImport')?.addEventListener('click',runImport);
     $('newBtn')?.addEventListener('click',()=>openDialog()); $('closeDialog')?.addEventListener('click',()=>$('itemDialog').close()); $('cancelBtn')?.addEventListener('click',()=>$('itemDialog').close());
     $('f_inclusao')?.addEventListener('change',()=>{ if($('f_inclusao').value&&$('f_prazo_interno').value) $('f_limite').value=addBusinessDays($('f_inclusao').value,$('f_prazo_interno').value); });
