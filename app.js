@@ -440,7 +440,7 @@
         origem:'Protocolo',
         observacoes:$('p_observacao').value.trim()||null,
         status_recebimento:'Aguardando recebimento',
-        criado_por:profile.nome||null
+        criado_por:profile.id||null
       };
       const {data:created,error}=await client.from('licitacoes').insert(payload).select('id').maybeSingle();
       if(error) alert('Não foi possível cadastrar a demanda: '+error.message);
