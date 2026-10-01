@@ -329,11 +329,25 @@
     $('pd_prazo')?.addEventListener('input',calcDistributionLimit); $('protocolSearch')?.addEventListener('input',renderLicitacoes); $('protocolStatus')?.addEventListener('change',renderLicitacoes);
     $('licitacaoTbody')?.addEventListener('click',e=>{const r=e.target.closest('[data-receive]'),d=e.target.closest('[data-distribute]');if(r)receiveLicitacao(r.dataset.receive);if(d)openDistribution(d.dataset.distribute);});
     $('protocolNewForm')?.addEventListener('submit',e=>{e.preventDefault();alert('A interface do Protocolo está pronta. O cadastro será ativado após criarmos os campos do Protocolo no Supabase.');});
-    $('protocolDistributeForm')?.addEventListener('submit',e=>{e.preventDefault();alert('A distribuição está pronta na interface. O salvamento será ativado após criarmos os campos de responsável e prazo no Supabase.');});
+    $('protocolDistributeForm')?.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const id=$('pd_id').value, responsavel=$('pd_responsavel').value, prazo=Number($('pd_prazo').value||0);
+      if(!responsavel||!prazo){alert('Informe o responsável e o prazo para execução.');return;}
+      const btn=e.submitter; if(btn){btn.disabled=true;btn.textContent='Distribuindo...';}
+      const limite=$('pd_limite').value, obs=$('pd_obs').value.trim(), agora=new Date().toISOString();
+      const payload={responsavel,distribuido_em:agora,prazo_execucao_dias:prazo,data_limite_execucao:limite||null};
+      if(obs) payload.observacao_distribuicao=obs;
+      const {error}=await client.from('licitacoes').update(payload).eq('id',id);
+      if(error){
+        alert('Para concluir a distribuição, ainda precisamos criar os campos de distribuição no banco de dados. Erro: '+error.message);
+      }else{
+        $('protocolDistributeDialog').close(); await loadLicitacoes();
+      }
+      if(btn){btn.disabled=false;btn.textContent='Distribuir';}
+    });
     $('navLicitacoes')?.addEventListener('click',async()=>{if(!profile.modulo_licitacoes)return alert('Usuário sem acesso ao módulo Licitações.');await loadLicitacoes();showModule('licitacoes');}); $('navPlanejamento')?.addEventListener('click',()=>{if(!profile.modulo_planejamento)return alert('Usuário sem acesso ao módulo Planejamento.');showModule('planejamento');}); $('navCompras')?.addEventListener('click',()=>showModule('compras'));
     $('scopeOngoing')?.addEventListener('click',()=>{planningScope='ongoing';$('scopeOngoing').classList.add('active');$('scopeAll').classList.remove('active');render();});
     $('scopeAll')?.addEventListener('click',()=>{planningScope='all';$('scopeAll').classList.add('active');$('scopeOngoing').classList.remove('active');render();});
-    $('licitacaoTbody')?.addEventListener('click',e=>{const b=e.target.closest('[data-receive]');if(b)receiveLicitacao(b.dataset.receive);});
     ['search','statusFilter','quoteFilter','secretariaFilter','responsavelFilter','tipoFilter','modalidadeFilter','prazoFilter'].forEach(id=>$(id)?.addEventListener('input',render));
     $('clearFilters')?.addEventListener('click',()=>{ ['search','statusFilter','quoteFilter','secretariaFilter','responsavelFilter','tipoFilter','modalidadeFilter','prazoFilter'].forEach(id=>{if($(id))$(id).value='';}); render(); });
     $('printBtn')?.addEventListener('click',()=>window.print());
