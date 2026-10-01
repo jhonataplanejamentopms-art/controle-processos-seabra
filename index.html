@@ -44,6 +44,8 @@
       <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento">Planejamento</button>
       <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Protocolo</button>
       <button type="button" id="navCompras" class="nav-btn" data-module="compras">Compras</button>
+      <span class="nav-spacer"></span>
+      <button type="button" id="navMinhasDemandas" class="nav-btn nav-my">Minhas demandas <span id="protocolMineCount"></span></button>
     </nav>
 
     <main class="container">
@@ -52,11 +54,7 @@
           <div><h2>Protocolo</h2><p>Recepção, registro e distribuição das demandas do setor de Licitações.</p></div>
           <div class="hero-actions"><button type="button" id="weeklyProtocolBtn" class="ghost">📱 Resumo semanal</button><button type="button" id="newProtocolBtn" class="primary editor-only">+ Nova demanda</button></div>
         </section>
-        <div class="protocol-tabs" style="display:flex;gap:8px;margin:0 0 14px">
-  <button type="button" id="protocolAllTab" class="ghost">Protocolo geral</button>
-  <button type="button" id="protocolMineTab" class="ghost">Minhas demandas <span id="protocolMineCount"></span></button>
-</div>
-<section class="kpis" id="licitacaoKpis"></section>
+        <section class="kpis" id="licitacaoKpis"></section>
         <section class="filters">
           <input id="protocolSearch" type="search" placeholder="Buscar demanda, secretaria ou responsável">
           <select id="protocolStatus"><option value="">Todas as situações</option><option>Aguardando recebimento</option><option>Aguardando distribuição</option><option>Distribuído</option><option>Pendente</option><option>Cancelado</option></select>
@@ -227,6 +225,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102621"></script>
+  <script src="app.js?v=01102623"></script>
 </body>
 </html>
