@@ -14,7 +14,7 @@
     let planningScope = 'ongoing';
     let licitacoes = [];
 
-    const statuses = ['Planejamento','Cotando','Cotado','Aguard. Autorização','Enviado p/ Licitação','Edital Publicado','Concluído','Suspenso','Cancelado'];
+    const statuses = ['Planejamento','Cotando','Cotado','Aguard. Autorização','Enviado p/ Protocolo','Edital Publicado','Concluído','Suspenso','Cancelado'];
     const types = ['Bem','Serviço','Obra','Serviço de Engenharia'];
     statuses.forEach(s => $('statusFilter')?.insertAdjacentHTML('beforeend', `<option>${esc(s)}</option>`));
     types.forEach(s => $('tipoFilter')?.insertAdjacentHTML('beforeend', `<option>${esc(s)}</option>`));
@@ -126,7 +126,7 @@
       const all=items.map(enriched), active=all.filter(x=>!x.data_envio_licitacao && !['Concluído','Cancelado','Suspenso'].includes(x.situacao_geral));
       const cards=[
         ['Carteira ativa',active.length,''], ['Em cotação',all.filter(x=>x.situacao_cotacao==='Cotando').length,'info'],
-        ['Enviadas à licitação',all.filter(x=>x.data_envio_licitacao).length,'info'], ['Atrasadas',all.filter(x=>x.deadline.key==='atrasado').length,'danger'],
+        ['Enviadas ao Protocolo',all.filter(x=>x.data_envio_licitacao).length,'info'], ['Atrasadas',all.filter(x=>x.deadline.key==='atrasado').length,'danger'],
         ['A vencer em 7 dias',all.filter(x=>x.deadline.key==='vence7').length,'warn'], ['Com impedimento',all.filter(x=>(x.impedimentos||'').trim()).length,'warn'],
         ['Sem responsável',active.filter(x=>!(x.responsavel||'').trim()).length,'danger'], ['Concluídas',all.filter(x=>x.situacao_geral==='Concluído').length,'']
       ];
@@ -175,7 +175,7 @@
       const fmt=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
       const list=(arr,fn)=>arr.length?arr.map(x=>'• '+fn(x)).join('\n'):'• Nenhuma';
       const attention=[...new Map([...overdue,...impeded].map(x=>[String(x.id),x])).values()].slice(0,8);
-      return ['📊 *ACOMPANHAMENTO SEMANAL – PLANEJAMENTO*','📅 Período: '+fmt(r.start)+' a '+fmt(r.end),'','📌 *CENÁRIO ATUAL*','• Demandas em andamento: '+active.length,'• Em cotação: '+active.filter(x=>x.situacao_cotacao==='Cotando').length,'• Atrasadas: '+overdue.length,'• Com impedimento: '+impeded.length,'• A vencer em 7 dias: '+due7.length,'','✅ *ENVIADAS À LICITAÇÃO NA SEMANA*',list(sent,x=>x.demanda+' — '+brDate(x.data_envio_licitacao)),'','🏁 *CONCLUÍDAS NA SEMANA*',list(concluded,x=>x.demanda),'','⚠️ *PONTOS DE ATENÇÃO*',list(attention,x=>x.demanda+' — '+(x.impedimentos||x.deadline.label)),'','📋 *PRÓXIMAS PROVIDÊNCIAS*',list(next,x=>x.demanda+' — '+splitObs(x.observacoes).proxima),'','🏛️ Planejamento | Prefeitura Municipal de Seabra'].join('\n');
+      return ['📊 *ACOMPANHAMENTO SEMANAL – PLANEJAMENTO*','📅 Período: '+fmt(r.start)+' a '+fmt(r.end),'','📌 *CENÁRIO ATUAL*','• Demandas em andamento: '+active.length,'• Em cotação: '+active.filter(x=>x.situacao_cotacao==='Cotando').length,'• Atrasadas: '+overdue.length,'• Com impedimento: '+impeded.length,'• A vencer em 7 dias: '+due7.length,'','✅ *ENVIADAS AO PROTOCOLO NA SEMANA*',list(sent,x=>x.demanda+' — '+brDate(x.data_envio_licitacao)),'','🏁 *CONCLUÍDAS NA SEMANA*',list(concluded,x=>x.demanda),'','⚠️ *PONTOS DE ATENÇÃO*',list(attention,x=>x.demanda+' — '+(x.impedimentos||x.deadline.label)),'','📋 *PRÓXIMAS PROVIDÊNCIAS*',list(next,x=>x.demanda+' — '+splitObs(x.observacoes).proxima),'','🏛️ Planejamento | Prefeitura Municipal de Seabra'].join('\n');
     }
     async function openWeeklyWhatsapp(){ const ta=$('weeklyWhatsappText'); ta.value='Gerando resumo...'; $('weeklyWhatsappDialog').showModal(); ta.value=await buildWeeklyWhatsapp(); }
 
@@ -356,7 +356,7 @@
         ${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Tipo',esc(x.tipo_objeto||'—'))}${detailField('Modalidade',esc(x.modalidade_prevista||'—'))}
         ${detailField('Situação das cotações',esc(x.situacao_cotacao||'—'))}${detailField('Situação geral',`<span class="badge">${esc(x.situacao_geral||'Sem status')}</span>`)}
         ${detailField('Início',brDate(x.data_inicio_planejamento))}${detailField('Data limite',`${brDate(x.data_limite_planejamento)}<br><span class="badge ${d.class}">${esc(d.label)}</span>`)}
-        ${detailField('Envio à Licitação',brDate(x.data_envio_licitacao))}${detailField('Valor estimado',money(x.valor_estimado))}${detailField('Responsável',esc(x.responsavel||'—'))}
+        ${detailField('Envio ao Protocolo',brDate(x.data_envio_licitacao))}${detailField('Valor estimado',money(x.valor_estimado))}${detailField('Responsável',esc(x.responsavel||'—'))}
         ${detailField('Próxima providência',esc(splitObs(x.observacoes).proxima||'Sem providência registrada'),'span-3')}${detailField('Impedimentos',esc(x.impedimentos||'Sem impedimentos'),'span-3')}${detailField('Observações',esc(splitObs(x.observacoes).obs||'Sem observações'),'span-3')}
         ${detailField('Criado em',x.criado_em?new Date(x.criado_em).toLocaleString('pt-BR'):'—')}${detailField('Atualizado em',x.atualizado_em?new Date(x.atualizado_em).toLocaleString('pt-BR'):'—')}
       </div>`;
@@ -364,7 +364,7 @@
     }
 
     function formatChange(k,oldV,newV){
-      const labels={demanda:'Demanda',secretaria:'Secretaria',tipo_objeto:'Tipo',modalidade_prevista:'Modalidade',situacao_cotacao:'Situação da cotação',data_inicio_planejamento:'Início',data_limite_planejamento:'Data limite',data_envio_licitacao:'Envio à Licitação',valor_estimado:'Valor estimado',responsavel:'Responsável',situacao_geral:'Situação geral',impedimentos:'Impedimentos',observacoes:'Observações'};
+      const labels={demanda:'Demanda',secretaria:'Secretaria',tipo_objeto:'Tipo',modalidade_prevista:'Modalidade',situacao_cotacao:'Situação da cotação',data_inicio_planejamento:'Início',data_limite_planejamento:'Data limite',data_envio_licitacao:'Envio ao Protocolo',valor_estimado:'Valor estimado',responsavel:'Responsável',situacao_geral:'Situação geral',impedimentos:'Impedimentos',observacoes:'Observações'};
       if(!(k in labels)) return '';
       const fmt=(v)=>k.startsWith('data_')?brDate(v):(k==='valor_estimado'?money(v):(v==null||v===''?'—':String(v)));
       return `<div><strong>${labels[k]}:</strong> ${esc(fmt(oldV))} → ${esc(fmt(newV))}</div>`;
@@ -487,7 +487,7 @@
     $('clearFilters')?.addEventListener('click',()=>{ ['search','statusFilter','quoteFilter','secretariaFilter','responsavelFilter','tipoFilter','modalidadeFilter','prazoFilter'].forEach(id=>{if($(id))$(id).value='';}); render(); });
     $('printBtn')?.addEventListener('click',()=>window.print());
     $('exportBtn')?.addEventListener('click',()=>{
-      const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Início':brDate(x.data_inicio_planejamento),'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio à Licitação':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Próxima Providência':splitObs(x.observacoes).proxima,'Observações':splitObs(x.observacoes).obs}));
+      const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Início':brDate(x.data_inicio_planejamento),'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio ao Protocolo':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Próxima Providência':splitObs(x.observacoes).proxima,'Observações':splitObs(x.observacoes).obs}));
       const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Planejamento'); XLSX.writeFile(wb,'planejamento_filtrado.xlsx');
     });
     $('weeklyProtocolBtn')?.addEventListener('click',openWeeklyProtocol);
@@ -504,11 +504,11 @@
     $('itemForm')?.addEventListener('submit',async e=>{
       e.preventDefault(); if(!profile.modulo_planejamento||!(['editor','administrador'].includes(String(profile.nivel_planejamento||profile.perfil||'').toLowerCase())||isMaster()))return alert('Seu acesso ao Planejamento é somente para visualização.'); const id=$('itemId').value;
       const payload={demanda:$('f_nome').value.trim(),secretaria:$('f_secretaria').value.trim()||null,tipo_objeto:$('f_tipo').value||null,modalidade_prevista:$('f_modalidade').value.trim()||null,situacao_cotacao:$('f_cotacoes').value||null,data_inicio_planejamento:$('f_inclusao').value||null,data_limite_planejamento:$('f_limite').value||null,data_envio_licitacao:$('f_envio').value||null,valor_estimado:$('f_valor').value===''?null:Number($('f_valor').value),responsavel:$('f_responsavel').value.trim()||null,situacao_geral:$('f_status').value||null,impedimentos:$('f_impedimentos').value.trim()||null,observacoes:joinObs($('f_obs').value,$('f_proxima').value)};
-      if(payload.data_envio_licitacao) payload.situacao_geral='Enviado p/ Licitação';
+      if(payload.data_envio_licitacao) payload.situacao_geral='Enviado p/ Protocolo';
       // Em novos cadastros, não envia data_envio_licitacao no INSERT.
-      // O trigger legado do Supabase tenta criar a licitação em BEFORE INSERT,
+      // O trigger legado do Supabase cria o registro de Protocolo em BEFORE INSERT,
       // antes de o planejamento existir, causando violação da chave estrangeira.
-      // O encaminhamento para Licitações ocorre depois, via UPDATE do planejamento já criado.
+      // O encaminhamento para o Protocolo ocorre depois, via UPDATE do planejamento já criado.
       if(!id) delete payload.data_envio_licitacao;
       const res=id?await client.from('planejamentos').update(payload).eq('id',id):await client.from('planejamentos').insert(payload); if(res.error)return alert(res.error.message); $('itemDialog').close(); await loadItems(); if(profile.modulo_licitacoes) await loadLicitacoes();
     });
