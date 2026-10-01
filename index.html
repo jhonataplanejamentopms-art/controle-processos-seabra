@@ -224,7 +224,9 @@
     <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3 id="protocolHistoryTitle">Histórico da demanda</h3></div><button type="button" id="closeProtocolHistory" class="icon">×</button></div>
     <div id="protocolHistorySummary"></div>
     <div id="protocolHistoryContent" style="margin-top:14px"></div>
+    <div id="protocolMasterActions" class="dialog-actions hidden" style="margin-top:14px"><button type="button" id="masterManageDemand" class="ghost">Excluir / Retornar</button></div>
   </div></dialog>
+  <dialog id="masterDemandDialog" class="detail-dialog"><div class="dialog-card"><div class="dialog-head"><div><small class="eyebrow">Administração da demanda</small><h3>Excluir ou retornar demanda</h3></div><button type="button" id="closeMasterDemand" class="icon">×</button></div><input type="hidden" id="masterDemandId"><p>O que deseja fazer com esta demanda?</p><div class="form-grid"><button type="button" id="masterReturnDemand" class="ghost span-2"><strong>Retornar para a fase anterior</strong><br><small>Mantém a demanda e todo o histórico.</small></button><button type="button" id="masterDeleteDemand" class="ghost span-2"><strong>Excluir totalmente</strong><br><small>Exclui definitivamente a demanda e os registros relacionados.</small></button></div><div class="dialog-actions"><button type="button" id="cancelMasterDemand" class="ghost">Cancelar</button></div></div></dialog>
   <dialog id="protocolProgressDialog" class="detail-dialog"><form id="protocolProgressForm" class="dialog-card">
     <div class="dialog-head"><div><small class="eyebrow">Minhas demandas</small><h3>Atualizar andamento</h3></div><button type="button" id="closeProtocolProgress" class="icon">×</button></div>
     <input type="hidden" id="pa_id"><div class="form-grid">
@@ -265,6 +267,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102631"></script>
+  <script src="app.js?v=01102632"></script>
 </body>
 </html>
