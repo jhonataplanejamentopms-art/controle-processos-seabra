@@ -174,7 +174,7 @@
   <dialog id="detailDialog" class="detail-dialog"><div class="dialog-card detail-shell">
     <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3 id="detailTitle">Detalhes da demanda</h3></div><button type="button" id="closeDetail" class="icon">×</button></div>
     <div id="detailContent"></div>
-    <div class="dialog-actions"><button type="button" id="historyBtn" class="ghost">Histórico</button><button type="button" id="detailDeleteBtn" class="danger-btn admin-only hidden">Excluir totalmente</button><button type="button" id="detailEditBtn" class="primary editor-only">Editar</button></div>
+    <div class="dialog-actions"><button type="button" id="planningDocumentsBtn" class="ghost">📎 Documentos</button><button type="button" id="historyBtn" class="ghost">Histórico</button><button type="button" id="detailDeleteBtn" class="danger-btn admin-only hidden">Excluir totalmente</button><button type="button" id="detailEditBtn" class="primary editor-only">Editar</button></div>
   </div></dialog>
   <dialog id="historyDialog" class="history-dialog"><div class="dialog-card detail-shell">
     <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3>Histórico da demanda</h3></div><button type="button" id="closeHistory" class="icon">×</button></div>
@@ -232,8 +232,14 @@
   <dialog id="protocolHistoryDialog" class="detail-dialog"><div class="dialog-card">
     <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3 id="protocolHistoryTitle">Histórico da demanda</h3></div><button type="button" id="closeProtocolHistory" class="icon">×</button></div>
     <div id="protocolHistorySummary"></div>
-    <div id="protocolHistoryContent" style="margin-top:14px"></div>
+    <div id="protocolHistoryContent" style="margin-top:14px"></div><div class="dialog-actions" style="margin-top:14px"><button type="button" id="protocolDocumentsBtn" class="ghost">📎 Documentos</button></div>
     <div id="protocolMasterActions" class="dialog-actions hidden" style="margin-top:14px"><button type="button" id="masterManageDemand" class="ghost">Excluir / Retornar</button></div>
+  </div></dialog>
+  <dialog id="documentsDialog" class="detail-dialog"><div class="dialog-card detail-shell">
+    <div class="dialog-head"><div><small class="eyebrow">Documentos da demanda</small><h3 id="documentsTitle">Arquivos</h3></div><button type="button" id="closeDocuments" class="icon">×</button></div>
+    <input type="hidden" id="documentsPlanejamentoId"><input type="hidden" id="documentsLicitacaoId"><input type="hidden" id="documentsPhase">
+    <div class="documents-upload"><label>Adicionar documentos<input id="documentsFiles" type="file" multiple></label><button type="button" id="uploadDocumentsBtn" class="primary">Enviar arquivo(s)</button><small>Limite de 50 MB por arquivo.</small></div>
+    <div id="documentsList" class="documents-list"></div>
   </div></dialog>
   <dialog id="masterDemandDialog" class="detail-dialog"><div class="dialog-card"><div class="dialog-head"><div><small class="eyebrow">Administração da demanda</small><h3>Excluir ou retornar demanda</h3></div><button type="button" id="closeMasterDemand" class="icon">×</button></div><input type="hidden" id="masterDemandId"><p>O que deseja fazer com esta demanda?</p><div class="form-grid"><button type="button" id="masterReturnDemand" class="ghost span-2"><strong>Retornar para a fase anterior</strong><br><small>Mantém a demanda e todo o histórico.</small></button><button type="button" id="masterDeleteDemand" class="ghost span-2"><strong>Excluir totalmente</strong><br><small>Exclui definitivamente a demanda e os registros relacionados.</small></button></div><div class="dialog-actions"><button type="button" id="cancelMasterDemand" class="ghost">Cancelar</button></div></div></dialog>
   <dialog id="protocolProgressDialog" class="detail-dialog"><form id="protocolProgressForm" class="dialog-card">
@@ -276,6 +282,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102638"></script>
+  <script src="app.js?v=01102639"></script>
 </body>
 </html>
