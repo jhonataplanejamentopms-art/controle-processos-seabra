@@ -323,7 +323,8 @@
 
     $('loginForm')?.addEventListener('submit',async e=>{ e.preventDefault(); setLoginMsg('Entrando...','info'); $('loginBtn').disabled=true; try{ await doLogin(($('email').value||'').trim(),$('password').value||''); await enterApp(); setLoginMsg(''); }catch(err){ setLoginMsg(`Erro: ${err?.message||'Falha ao entrar.'}`,'error'); }finally{$('loginBtn').disabled=false;} });
     $('logoutBtn')?.addEventListener('click',async()=>{ await client.auth.signOut(); $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); });
-    $('newProtocolBtn')?.addEventListener('click',()=>$('protocolNewDialog').showModal());
+    $('newProtocolBtn')?.addEventListener('click',()=>{ $('p_tipo').value=''; $('p_novo_tipo').value=''; $('p_novo_tipo_wrap').classList.add('hidden'); $('protocolNewDialog').showModal(); });
+    $('p_tipo')?.addEventListener('change',()=>{ const novo=$('p_tipo').value==='__novo__'; $('p_novo_tipo_wrap').classList.toggle('hidden',!novo); $('p_novo_tipo').required=novo; if(novo) $('p_novo_tipo').focus(); });
     $('closeProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close()); $('cancelProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close());
     $('closeProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close()); $('cancelProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close());
     $('pd_prazo')?.addEventListener('input',calcDistributionLimit); $('protocolSearch')?.addEventListener('input',renderLicitacoes); $('protocolStatus')?.addEventListener('change',renderLicitacoes);
