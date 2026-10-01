@@ -230,41 +230,45 @@
     }
 
 
-    function licitacaoDays(x){
-      const start=x.encaminhado_em?dateOnly(x.encaminhado_em):null;
-      if(!start) return '—';
-      return `${businessDaysDiff(start,today())} dia${businessDaysDiff(start,today())===1?'':'s'} útil${businessDaysDiff(start,today())===1?'':'eis'}`;
+    function protocolStatus(x){
+      if(x.status_recebimento==='Cancelado'||x.situacao==='Cancelado') return 'Cancelado';
+      if(x.status_recebimento==='Pendente'||x.situacao==='Pendente') return 'Pendente';
+      if(x.responsavel) return 'Distribuído';
+      if(x.recebido_em) return 'Aguardando distribuição';
+      return 'Aguardando recebimento';
+    }
+    function protocolDeadline(x){
+      if(!x.data_limite_execucao) return '';
+      const d=dateOnly(x.data_limite_execucao), now=today();
+      if(d<now) return 'atrasado'; const n=businessDaysDiff(now,d); return n<=2?'vence7':'noprazo';
     }
     function renderLicitacoes(){
       if(!$('licitacaoTbody')) return;
-      $('licitacaoTbody').innerHTML=licitacoes.map(x=>`<tr>
-        <td>${esc(x.numero_processo||'—')}</td><td><strong>${esc(x.objeto||'—')}</strong></td><td>${esc(x.secretaria||'—')}</td><td>${esc(x.modalidade||'—')}</td>
-        <td>${brDate(x.encaminhado_em)}</td><td><span class="badge info">${esc(licitacaoDays(x))}</span></td>
-        <td>${x.recebido_em?`<span class="badge received">Recebido em ${new Date(x.recebido_em).toLocaleString('pt-BR')}</span>`:'<span class="badge waiting">Aguardando recebimento</span>'}</td>
-        <td>${esc(x.recebido_por_nome||'—')}</td>
-        <td>${!x.recebido_em && profile.modulo_licitacoes && profile.pode_receber_licitacao?`<button class="receive-btn" data-receive="${esc(x.id)}">Dar recebimento</button>`:'—'}</td>
-      </tr>`).join('');
-      $('licitacaoEmpty')?.classList.toggle('hidden',licitacoes.length>0);
-      if($('licitacaoResultCount')) $('licitacaoResultCount').textContent=`${licitacoes.length} processo${licitacoes.length===1?'':'s'}`;
-      if($('licitacaoKpis')) $('licitacaoKpis').innerHTML=[['Total em Licitações',licitacoes.length],['Aguardando recebimento',licitacoes.filter(x=>!x.recebido_em).length],['Recebidos',licitacoes.filter(x=>x.recebido_em).length]].map(([a,b])=>`<div class="kpi"><small>${a}</small><b>${b}</b></div>`).join('');
+      const q=($('protocolSearch')?.value||'').toLowerCase(), st=$('protocolStatus')?.value||'';
+      const list=licitacoes.filter(x=>{const s=protocolStatus(x); const hay=[x.objeto,x.secretaria,x.responsavel,x.tipo_demanda,x.referencia].join(' ').toLowerCase();return(!q||hay.includes(q))&&(!st||s===st);});
+      $('licitacaoTbody').innerHTML=list.map(x=>{const s=protocolStatus(x), dl=protocolDeadline(x);return `<tr>
+        <td>${brDate(x.encaminhado_em||x.criado_em)}</td><td>${esc(x.tipo_demanda||'Processo Licitatório')}</td><td><strong>${esc(x.objeto||'—')}</strong></td><td>${esc(x.secretaria||'—')}</td>
+        <td>${x.recebido_em?new Date(x.recebido_em).toLocaleString('pt-BR'):'—'}</td><td>${esc(x.responsavel||'—')}</td><td>${x.distribuido_em?new Date(x.distribuido_em).toLocaleString('pt-BR'):'—'}</td>
+        <td>${x.prazo_execucao_dias?esc(x.prazo_execucao_dias)+' dias úteis':'—'}</td><td>${x.data_limite_execucao?`<span class="badge ${dl}">${brDate(x.data_limite_execucao)}</span>`:'—'}</td><td><span class="badge ${s==='Distribuído'?'info':s==='Aguardando recebimento'?'waiting':''}">${esc(s)}</span></td>
+        <td>${!x.recebido_em&&profile.pode_receber_licitacao?`<button class="receive-btn" data-receive="${esc(x.id)}">Receber</button>`:x.recebido_em&&!x.responsavel?`<button class="primary" data-distribute="${esc(x.id)}">Distribuir</button>`:'—'}</td>
+      </tr>`;}).join('');
+      $('licitacaoEmpty')?.classList.toggle('hidden',list.length>0); $('licitacaoResultCount').textContent=`${list.length} demanda${list.length===1?'':'s'}`;
+      const stats=[['Aguardando recebimento',licitacoes.filter(x=>protocolStatus(x)==='Aguardando recebimento').length],['Aguardando distribuição',licitacoes.filter(x=>protocolStatus(x)==='Aguardando distribuição').length],['Distribuídas',licitacoes.filter(x=>protocolStatus(x)==='Distribuído').length],['Pendentes',licitacoes.filter(x=>protocolStatus(x)==='Pendente').length]];
+      $('licitacaoKpis').innerHTML=stats.map(([n,v])=>`<div class="kpi"><small>${n}</small><b>${v}</b></div>`).join('');
     }
     async function loadLicitacoes(){
       if(!profile.modulo_licitacoes){ licitacoes=[]; renderLicitacoes(); return; }
-      const {data,error}=await client.rpc('listar_licitacoes_painel');
-      if(error) throw error; licitacoes=data||[]; renderLicitacoes();
+      const {data,error}=await client.rpc('listar_licitacoes_painel'); if(error) throw error; licitacoes=data||[]; renderLicitacoes();
     }
     async function receiveLicitacao(id){
-      if(!confirm('Confirmar o recebimento deste processo na etapa de Licitações?')) return;
-      const {error}=await client.rpc('receber_licitacao',{p_licitacao_id:id});
-      if(error){alert(error.message);return;} await loadLicitacoes();
+      if(!confirm('Confirmar o recebimento desta demanda? A data e hora serão registradas.')) return;
+      const {error}=await client.rpc('receber_licitacao',{p_licitacao_id:id}); if(error){alert(error.message);return;} await loadLicitacoes();
     }
-
-    function openDialog(x={}){
-      const map={itemId:'id',f_nome:'demanda',f_secretaria:'secretaria',f_tipo:'tipo_objeto',f_modalidade:'modalidade_prevista',f_cotacoes:'situacao_cotacao',f_qtd_cotacoes:'qtd_cotacoes',f_inclusao:'data_inicio_planejamento',f_limite:'data_limite_planejamento',f_envio:'data_envio_licitacao',f_valor:'valor_estimado',f_responsavel:'responsavel',f_status:'situacao_geral',f_impedimentos:'impedimentos'};
-      Object.entries(map).forEach(([id,k])=>{ if($(id)) $(id).value=x[k]??''; }); const so=splitObs(x.observacoes); if($('f_obs')) $('f_obs').value=so.obs; if($('f_proxima')) $('f_proxima').value=so.proxima;
-      if(!x.id){ $('f_inclusao').value=new Date().toISOString().slice(0,10); $('f_prazo_interno').value='20'; $('f_limite').value=addBusinessDays($('f_inclusao').value,20); $('f_status').value='Planejamento'; }
-      $('dialogTitle').textContent=x.id?'Editar demanda':'Nova demanda'; $('itemDialog').showModal();
+    function openDistribution(id){
+      const x=licitacoes.find(v=>String(v.id)===String(id)); if(!x)return;
+      $('pd_id').value=id; $('pd_responsavel').value=''; $('pd_prazo').value=''; $('pd_limite').value=''; $('pd_obs').value=''; $('protocolDistributeDialog').showModal();
     }
+    function calcDistributionLimit(){ const x=licitacoes.find(v=>String(v.id)===String($('pd_id').value)); const base=x?.recebido_em?String(x.recebido_em).slice(0,10):new Date().toISOString().slice(0,10); $('pd_limite').value=$('pd_prazo').value?addBusinessDays(base,$('pd_prazo').value):''; }
 
     function detailField(label,value,span=''){ return `<div class="detail-field ${span}"><small>${esc(label)}</small><div>${value||'—'}</div></div>`; }
     function openDetail(id){
@@ -308,6 +312,13 @@
 
     $('loginForm')?.addEventListener('submit',async e=>{ e.preventDefault(); setLoginMsg('Entrando...','info'); $('loginBtn').disabled=true; try{ await doLogin(($('email').value||'').trim(),$('password').value||''); await enterApp(); setLoginMsg(''); }catch(err){ setLoginMsg(`Erro: ${err?.message||'Falha ao entrar.'}`,'error'); }finally{$('loginBtn').disabled=false;} });
     $('logoutBtn')?.addEventListener('click',async()=>{ await client.auth.signOut(); $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); });
+    $('newProtocolBtn')?.addEventListener('click',()=>$('protocolNewDialog').showModal());
+    $('closeProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close()); $('cancelProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close());
+    $('closeProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close()); $('cancelProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close());
+    $('pd_prazo')?.addEventListener('input',calcDistributionLimit); $('protocolSearch')?.addEventListener('input',renderLicitacoes); $('protocolStatus')?.addEventListener('change',renderLicitacoes);
+    $('licitacaoTbody')?.addEventListener('click',e=>{const r=e.target.closest('[data-receive]'),d=e.target.closest('[data-distribute]');if(r)receiveLicitacao(r.dataset.receive);if(d)openDistribution(d.dataset.distribute);});
+    $('protocolNewForm')?.addEventListener('submit',e=>{e.preventDefault();alert('A interface do Protocolo está pronta. O cadastro será ativado após criarmos os campos do Protocolo no Supabase.');});
+    $('protocolDistributeForm')?.addEventListener('submit',e=>{e.preventDefault();alert('A distribuição está pronta na interface. O salvamento será ativado após criarmos os campos de responsável e prazo no Supabase.');});
     $('navLicitacoes')?.addEventListener('click',async()=>{if(!profile.modulo_licitacoes)return alert('Usuário sem acesso ao módulo Licitações.');await loadLicitacoes();showModule('licitacoes');}); $('navPlanejamento')?.addEventListener('click',()=>{if(!profile.modulo_planejamento)return alert('Usuário sem acesso ao módulo Planejamento.');showModule('planejamento');}); $('navCompras')?.addEventListener('click',()=>showModule('compras'));
     $('scopeOngoing')?.addEventListener('click',()=>{planningScope='ongoing';$('scopeOngoing').classList.add('active');$('scopeAll').classList.remove('active');render();});
     $('scopeAll')?.addEventListener('click',()=>{planningScope='all';$('scopeAll').classList.add('active');$('scopeOngoing').classList.remove('active');render();});
