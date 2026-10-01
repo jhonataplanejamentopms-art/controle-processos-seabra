@@ -241,6 +241,8 @@
       if(d<now) return 'atrasado'; const n=businessDaysDiff(now,d); return n<=2?'vence7':'noprazo';
     }
     function protocolCanEdit(){return String(profile.nivel_licitacoes||'').toLowerCase()==='editor'||['administrador','admin'].includes(String(profile.perfil||'').toLowerCase());}
+    function isMaster(){return ['administrador','admin'].includes(String(profile.perfil||'').toLowerCase());}
+    function demandPhase(x){if(x?.encaminhado_licitacao_em)return 'Licitação';if(x?.recebido_em||x?.origem==='Protocolo')return 'Protocolo';return 'Planejamento';}
     function isMyProtocol(x){const me=String(profile.nome||'').trim().toLowerCase(), r=String(x.responsavel||'').trim().toLowerCase(); if(!me||!r)return false; return me===r||me.startsWith(r+' ')||r.startsWith(me.split(' ')[0]);}
     function renderLicitacoes(){
       if(!$('licitacaoTbody')) return;
@@ -263,7 +265,7 @@
       $('protocolHistoryTitle').textContent=x.objeto||'Histórico da demanda';
       $('protocolHistorySummary').innerHTML=`<div class="detail-grid">${detailField('Tipo',esc(x.tipo_demanda||'Processo Licitatório'))}${detailField('Modalidade',esc(x.modalidade||'—'))}${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Responsável',esc(x.responsavel||'—'))}${detailField('Situação atual',esc(x.situacao_execucao||protocolStatus(x)))}${detailField('Próxima providência',esc(x.proxima_providencia||'—'),'span-3')}</div>`;
       $('protocolHistoryContent').innerHTML='<div class="history-empty">Carregando histórico...</div>';
-      $('protocolHistoryDialog').showModal();
+      $('masterDemandId').value=id; $('protocolMasterActions')?.classList.toggle('hidden',!isMaster()); $('protocolHistoryDialog').showModal();
       const {data,error}=await client.from('licitacoes_andamentos').select('id,situacao,andamento,proxima_providencia,impedimento,criado_por,criado_em').eq('licitacao_id',id).order('criado_em',{ascending:false});
       if(error){$('protocolHistoryContent').innerHTML=`<div class="history-empty">${esc(error.message)}</div>`;return;}
       const rows=data||[], hasReceiptEvent=rows.some(r=>r.situacao==='Recebida'), hasDistributionEvent=rows.some(r=>r.situacao==='Distribuída');
@@ -272,6 +274,31 @@
       const dist=x.distribuido_em&&!hasDistributionEvent?`<div class="history-item"><div class="history-meta"><strong>Distribuição</strong><span>${protocolDateTime(x.distribuido_em)}</span></div><div class="history-changes">Distribuída para <strong>${esc(x.responsavel||'—')}</strong>${x.data_limite_execucao?' · prazo até '+brDate(x.data_limite_execucao):''}${x.observacao_distribuicao?'<br>'+esc(x.observacao_distribuicao):''}</div></div>`:'';
       const ands=rows.map(r=>`<div class="history-item"><div class="history-meta"><strong>${esc(r.situacao||'Andamento')}</strong><span>${protocolDateTime(r.criado_em)}</span></div><div class="history-changes"><strong>Andamento:</strong> ${esc(r.andamento||'—')}${r.proxima_providencia?'<br><strong>Próxima providência:</strong> '+esc(r.proxima_providencia):''}${r.impedimento?'<br><strong>Impedimento/observação:</strong> '+esc(r.impedimento):''}</div></div>`).join('');
       $('protocolHistoryContent').innerHTML=ands+dist+receb+inicio;
+    }
+    function openMasterDemand(id){
+      if(!isMaster()) return;
+      const x=licitacoes.find(v=>String(v.id)===String(id)); if(!x)return;
+      $('masterDemandId').value=id; const phase=demandPhase(x), ret=$('masterReturnDemand');
+      ret.disabled=phase==='Planejamento';
+      ret.querySelector('small').textContent=phase==='Licitação'?'Devolve a demanda para o Protocolo, preservando todo o histórico.':phase==='Protocolo'?'Devolve a demanda para o Planejamento, preservando todo o histórico.':'A demanda já está na primeira fase.';
+      $('protocolHistoryDialog')?.close(); $('masterDemandDialog').showModal();
+    }
+    async function masterReturnDemand(){
+      if(!isMaster())return; const id=$('masterDemandId').value,x=licitacoes.find(v=>String(v.id)===String(id));if(!x)return;
+      const phase=demandPhase(x);if(phase==='Planejamento')return alert('A demanda já está na primeira fase.');
+      const destino=phase==='Licitação'?'Protocolo':'Planejamento';
+      if(!confirm('Deseja retornar esta demanda de '+phase+' para '+destino+'? O histórico será preservado.'))return;
+      const {error}=await client.rpc('admin_retornar_demanda',{p_licitacao_id:id});
+      if(error)return alert('Não foi possível retornar a demanda: '+error.message);
+      $('masterDemandDialog').close();await loadLicitacoes();if(profile.modulo_planejamento)await loadItems();alert('Demanda retornada para '+destino+'.');
+    }
+    async function masterDeleteDemand(){
+      if(!isMaster())return;const id=$('masterDemandId').value,x=licitacoes.find(v=>String(v.id)===String(id));if(!x)return;
+      if(!confirm('ATENÇÃO: esta ação excluirá definitivamente a demanda e todos os registros relacionados.\n\nDeseja continuar?'))return;
+      if(!confirm('Confirma a EXCLUSÃO TOTAL da demanda "'+(x.objeto||'Demanda')+'"? Esta ação não poderá ser desfeita.'))return;
+      const {error}=await client.rpc('admin_excluir_demanda_total',{p_licitacao_id:id});
+      if(error)return alert('Não foi possível excluir a demanda: '+error.message);
+      $('masterDemandDialog').close();await loadLicitacoes();if(profile.modulo_planejamento)await loadItems();alert('Demanda excluída totalmente.');
     }
     function renderEtapaLicitacao(){
       if(!$('etapaLicitacaoTbody'))return;
@@ -422,6 +449,11 @@
       if(btn){btn.disabled=false;btn.textContent='Cadastrar';}
     });
     $('closeProtocolHistory')?.addEventListener('click',()=>$('protocolHistoryDialog').close());
+    $('masterManageDemand')?.addEventListener('click',()=>openMasterDemand($('masterDemandId').value));
+    $('closeMasterDemand')?.addEventListener('click',()=>$('masterDemandDialog').close());
+    $('cancelMasterDemand')?.addEventListener('click',()=>$('masterDemandDialog').close());
+    $('masterReturnDemand')?.addEventListener('click',masterReturnDemand);
+    $('masterDeleteDemand')?.addEventListener('click',masterDeleteDemand);
     $('closeProtocolProgress')?.addEventListener('click',()=>$('protocolProgressDialog').close()); $('cancelProtocolProgress')?.addEventListener('click',()=>$('protocolProgressDialog').close());
     $('closeProtocolForward')?.addEventListener('click',()=>$('protocolForwardDialog').close()); $('cancelProtocolForward')?.addEventListener('click',()=>$('protocolForwardDialog').close());
     $('protocolProgressForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('pa_id').value,x=licitacoes.find(v=>String(v.id)===String(id));if(!x||!isMyProtocol(x))return alert('Somente o responsável designado pode atualizar esta demanda.');const sit=$('pa_situacao').value,andamento=$('pa_andamento').value.trim(),proxima=$('pa_proxima').value.trim(),imp=$('pa_impedimento').value.trim(),agora=new Date().toISOString();if(!andamento)return alert('Informe o andamento ou providência realizada.');const reg=await client.rpc('registrar_andamento_licitacao',{p_licitacao_id:id,p_situacao:sit,p_andamento:andamento,p_proxima_providencia:proxima||null,p_impedimento:imp||null});if(reg.error)return alert('Não foi possível registrar o andamento: '+reg.error.message);$('protocolProgressDialog').close();$('protocolProgressForm').reset();await loadLicitacoes();});
