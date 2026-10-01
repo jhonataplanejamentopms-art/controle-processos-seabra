@@ -319,7 +319,7 @@
       const {data,error}=await client.rpc('listar_licitacoes_painel'); if(error) throw error;
       // A função antiga do painel não retorna os novos campos do Protocolo.
       // Busca esses campos diretamente e combina pelo id para refletir a distribuição imediatamente.
-      const {data:dist,error:distError}=await client.from('licitacoes').select('id,responsavel,distribuido_em,prazo_execucao_dias,data_limite_execucao,observacao_distribuicao');
+      const {data:dist,error:distError}=await client.from('licitacoes').select('id,responsavel,distribuido_em,prazo_execucao_dias,data_limite_execucao,observacao_distribuicao,tipo_demanda,referencia,solicitante,prioridade,origem');
       if(distError) throw distError;
       const distMap=new Map((dist||[]).map(x=>[String(x.id),x]));
       (data||[]).forEach(x=>Object.assign(x,distMap.get(String(x.id))||{}));
@@ -331,8 +331,8 @@
       // toda demanda efetivamente encaminhada pelo Planejamento a partir de 01/10/2026.
       const caixa=base.find(x=>String(x.objeto||'').toLowerCase().includes('caixa de som'));
       const novas=base.filter(x=>{
-        const enviado=String(x.encaminhado_em||'').slice(0,10);
-        return enviado>='2026-10-01' && x.id!==caixa?.id;
+        const enviado=String(x.encaminhado_em||x.criado_em||'').slice(0,10);
+        return (x.origem==='Protocolo'||enviado>='2026-10-01') && x.id!==caixa?.id;
       });
       licitacoes=[...(caixa?[caixa]:[]),...novas];
       renderLicitacoes();
@@ -421,9 +421,35 @@
     $('closeProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close()); $('cancelProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close());
     $('pd_prazo')?.addEventListener('input',calcDistributionLimit); $('protocolSearch')?.addEventListener('input',renderLicitacoes); $('protocolStatus')?.addEventListener('change',renderLicitacoes);
     $('licitacaoTbody')?.addEventListener('click',e=>{const r=e.target.closest('[data-receive]'),d=e.target.closest('[data-distribute]');if(r)receiveLicitacao(r.dataset.receive);if(d)openDistribution(d.dataset.distribute);});
-    $('protocolNewForm')?.addEventListener('submit',e=>{e.preventDefault();alert('A interface do Protocolo está pronta. O cadastro será ativado após criarmos os campos do Protocolo no Supabase.');});
+    $('protocolNewForm')?.addEventListener('submit',async e=>{
+      e.preventDefault();
+      if(!protocolCanEdit()) return alert('Seu acesso ao Protocolo é somente para visualização.');
+      const tipo=$('p_tipo').value==='__novo__'?$('p_novo_tipo').value.trim():$('p_tipo').value;
+      const assunto=$('p_assunto').value.trim();
+      if(!tipo||!assunto) return alert('Informe o tipo de demanda e o assunto.');
+      const btn=e.submitter; if(btn){btn.disabled=true;btn.textContent='Cadastrando...';}
+      const payload={
+        planejamento_id:null,
+        objeto:assunto,
+        secretaria:$('p_secretaria').value.trim()||null,
+        tipo_demanda:tipo,
+        referencia:$('p_referencia').value.trim()||null,
+        solicitante:$('p_solicitante').value.trim()||null,
+        prioridade:$('p_prioridade').value||'Normal',
+        origem:'Protocolo',
+        observacoes:$('p_observacao').value.trim()||null,
+        status_recebimento:'Aguardando recebimento',
+        criado_por:profile.nome||null
+      };
+      const {data:created,error}=await client.from('licitacoes').insert(payload).select('id').maybeSingle();
+      if(error) alert('Não foi possível cadastrar a demanda: '+error.message);
+      else if(!created) alert('A demanda não foi gravada. Verifique a permissão de inclusão no Supabase.');
+      else { $('protocolNewDialog').close(); $('protocolNewForm').reset(); $('p_novo_tipo_wrap').classList.add('hidden'); await loadLicitacoes(); }
+      if(btn){btn.disabled=false;btn.textContent='Cadastrar';}
+    });
     $('protocolDistributeForm')?.addEventListener('submit',async e=>{
       e.preventDefault();
+      if(!protocolCanEdit()) return alert('Seu acesso ao Protocolo é somente para visualização.');
       const id=$('pd_id').value, responsavel=$('pd_responsavel').value, prazo=Number($('pd_prazo').value||0);
       if(!responsavel||!prazo){alert('Informe o responsável e o prazo para execução.');return;}
       const btn=e.submitter; if(btn){btn.disabled=true;btn.textContent='Distribuindo...';}
