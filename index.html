@@ -171,6 +171,15 @@
       <div class="dialog-actions"><button type="button" id="cancelBtn" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar</button></div>
     </form>
   </dialog>
+  <dialog id="detailDialog" class="detail-dialog"><div class="dialog-card detail-shell">
+    <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3 id="detailTitle">Detalhes da demanda</h3></div><button type="button" id="closeDetail" class="icon">×</button></div>
+    <div id="detailContent"></div>
+    <div class="dialog-actions"><button type="button" id="historyBtn" class="ghost">Histórico</button><button type="button" id="detailDeleteBtn" class="danger-btn admin-only hidden">Excluir totalmente</button><button type="button" id="detailEditBtn" class="primary editor-only">Editar</button></div>
+  </div></dialog>
+  <dialog id="historyDialog" class="history-dialog"><div class="dialog-card detail-shell">
+    <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3>Histórico da demanda</h3></div><button type="button" id="closeHistory" class="icon">×</button></div>
+    <div id="historyContent" class="history-list"></div>
+  </div></dialog>
   <dialog id="protocolNewDialog" class="detail-dialog"><form method="dialog" class="dialog-card" id="protocolNewForm">
     <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3>Nova demanda</h3></div><button type="button" id="closeProtocolNew" class="icon">×</button></div>
     <div class="form-grid">
@@ -267,6 +276,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102633"></script>
+  <script src="app.js?v=01102634"></script>
 </body>
 </html>
