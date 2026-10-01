@@ -416,6 +416,7 @@
     $('protocolAllTab')?.addEventListener('click',()=>{protocolView='all';renderLicitacoes();});
     $('protocolMineTab')?.addEventListener('click',()=>{protocolView='mine';renderLicitacoes();});
     $('newProtocolBtn')?.addEventListener('click',()=>{if(!protocolCanEdit())return alert('Seu acesso ao Protocolo é somente para visualização.'); $('p_tipo').value=''; $('p_novo_tipo').value=''; $('p_novo_tipo_wrap').classList.add('hidden'); $('protocolNewDialog').showModal(); });
+    $('p_secretaria')?.addEventListener('change',()=>{const outro=$('p_secretaria').value==='__outro__';$('p_outra_secretaria_wrap')?.classList.toggle('hidden',!outro);if(outro)$('p_outra_secretaria')?.focus();});
     $('p_tipo')?.addEventListener('change',()=>{ const novo=$('p_tipo').value==='__novo__'; $('p_novo_tipo_wrap').classList.toggle('hidden',!novo); $('p_novo_tipo').required=novo; if(novo) $('p_novo_tipo').focus(); });
     $('closeProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close()); $('cancelProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close());
     $('closeProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close()); $('cancelProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close());
@@ -431,7 +432,7 @@
       const payload={
         planejamento_id:null,
         objeto:assunto,
-        secretaria:$('p_secretaria').value.trim()||null,
+        secretaria:($('p_secretaria').value==='__outro__'?$('p_outra_secretaria').value.trim():$('p_secretaria').value)||null,
         tipo_demanda:tipo,
         referencia:$('p_referencia').value.trim()||null,
         solicitante:$('p_solicitante').value.trim()||null,
