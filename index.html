@@ -22,6 +22,7 @@
         <label>Senha<input id="password" type="password" autocomplete="current-password" required></label>
         <button id="loginBtn" type="submit" class="primary full">Entrar</button>
         <small id="loginMsg" class="login-msg"></small>
+        <button id="openSignupBtn" type="button" class="ghost full">Solicitar cadastro</button>
       </form>
     </div>
   </section>
@@ -34,6 +35,7 @@
       </div>
       <div class="user-area">
         <span id="userBadge"></span>
+        <button id="adminUsersBtn" type="button" class="ghost admin-only hidden">Usuários</button>
         <button id="logoutBtn" type="button" class="ghost">Sair</button>
       </div>
     </header>
@@ -196,6 +198,20 @@
     </div>
   </dialog>
 
+  <dialog id="signupDialog" class="detail-dialog"><form id="signupForm" class="dialog-card">
+    <div class="dialog-head"><div><small class="eyebrow">Acesso ao sistema</small><h3>Solicitar cadastro</h3></div><button type="button" id="closeSignup" class="icon">×</button></div>
+    <p class="muted">Crie sua conta. O acesso aos módulos será liberado após aprovação do administrador.</p>
+    <div class="form-grid"><label>Nome completo<input id="su_nome" required></label><label>E-mail<input id="su_email" type="email" required></label><label>Senha<input id="su_senha" type="password" minlength="8" required></label><label>Confirmar senha<input id="su_senha2" type="password" minlength="8" required></label></div>
+    <small id="signupMsg" class="login-msg"></small>
+    <div class="dialog-actions"><button type="button" id="cancelSignup" class="ghost">Cancelar</button><button type="submit" class="primary">Enviar solicitação</button></div>
+  </form></dialog>
+
+  <dialog id="adminUsersDialog" class="detail-dialog"><div class="dialog-card">
+    <div class="dialog-head"><div><small class="eyebrow">Administração</small><h3>Usuários e solicitações</h3></div><button type="button" id="closeAdminUsers" class="icon">×</button></div>
+    <p class="muted">Aprove o cadastro e defina os módulos que cada usuário poderá acessar.</p>
+    <div id="adminUsersList"></div>
+  </div></dialog>
+
   <dialog id="weeklyProtocolDialog" class="detail-dialog">
     <div class="dialog-card">
       <div class="dialog-head"><div><small class="eyebrow">Licitações - Protocolo</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyProtocol" class="icon">×</button></div>
@@ -206,6 +222,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102609"></script>
+  <script src="app.js?v=01102610"></script>
 </body>
 </html>
