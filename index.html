@@ -40,21 +40,26 @@
 
     <nav class="main-nav">
       <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento">Planejamento</button>
-      <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Licitações</button>
+      <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Licitações - Protocolo</button>
       <button type="button" id="navCompras" class="nav-btn" data-module="compras">Compras</button>
     </nav>
 
     <main class="container">
       <section id="moduloLicitacoes" class="module-view hidden">
         <section class="hero-row">
-          <div><h2>Licitações</h2><p>Processos recebidos automaticamente do Planejamento e contagem da etapa licitatória.</p></div>
+          <div><h2>Licitações - Protocolo</h2><p>Recepção, registro e distribuição das demandas do setor de Licitações.</p></div>
+          <div class="hero-actions"><button type="button" id="newProtocolBtn" class="primary editor-only">+ Nova demanda</button></div>
         </section>
         <section class="kpis" id="licitacaoKpis"></section>
-        <section class="result-summary"><span id="licitacaoResultCount">0 processos</span><span>O prazo começa no envio pelo Planejamento.</span></section>
+        <section class="filters">
+          <input id="protocolSearch" type="search" placeholder="Buscar demanda, secretaria ou responsável">
+          <select id="protocolStatus"><option value="">Todas as situações</option><option>Aguardando recebimento</option><option>Aguardando distribuição</option><option>Distribuído</option><option>Pendente</option><option>Cancelado</option></select>
+        </section>
+        <section class="result-summary"><span id="licitacaoResultCount">0 demandas</span><span>Entrada → recebimento → distribuição → execução.</span></section>
         <section class="table-card"><div class="table-wrap"><table>
-          <thead><tr><th>Processo</th><th>Objeto</th><th>Secretaria</th><th>Modalidade</th><th>Enviado</th><th>Dias em Licitações</th><th>Recebimento</th><th>Recebido por</th><th>Ação</th></tr></thead>
+          <thead><tr><th>Entrada</th><th>Tipo</th><th>Demanda / Assunto</th><th>Secretaria</th><th>Recebida em</th><th>Responsável</th><th>Distribuída em</th><th>Prazo</th><th>Data limite</th><th>Situação</th><th>Ação</th></tr></thead>
           <tbody id="licitacaoTbody"></tbody>
-        </table></div><div id="licitacaoEmpty" class="empty hidden">Nenhum processo encaminhado para Licitações.</div></section>
+        </table></div><div id="licitacaoEmpty" class="empty hidden">Nenhuma demanda no Protocolo.</div></section>
       </section>
 
       <section id="moduloPlanejamento" class="module-view">
@@ -157,6 +162,31 @@
       <div class="dialog-actions"><button type="button" id="cancelBtn" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar</button></div>
     </form>
   </dialog>
+  <dialog id="protocolNewDialog" class="detail-dialog"><form method="dialog" class="dialog-card" id="protocolNewForm">
+    <div class="dialog-head"><div><small class="eyebrow">Licitações - Protocolo</small><h3>Nova demanda</h3></div><button type="button" id="closeProtocolNew" class="icon">×</button></div>
+    <div class="form-grid">
+      <label>Tipo de demanda<select id="p_tipo" required><option value="">Selecione</option><option>Processo Licitatório</option><option>Reequilíbrio</option><option>Aditivo</option><option>Apostilamento</option><option>Impugnação / Esclarecimento</option><option>Outros</option></select></label>
+      <label>Secretaria / Órgão<input id="p_secretaria"></label>
+      <label class="span-2">Demanda / Assunto<input id="p_assunto" required></label>
+      <label>Referência<input id="p_referencia" placeholder="Contrato, ata, processo, pregão..."></label>
+      <label>Solicitante<input id="p_solicitante"></label>
+      <label>Prioridade<select id="p_prioridade"><option>Normal</option><option>Urgente</option></select></label>
+      <label class="span-2">Observação<textarea id="p_observacao" rows="3"></textarea></label>
+    </div>
+    <div class="dialog-actions"><button type="button" id="cancelProtocolNew" class="ghost">Cancelar</button><button type="submit" class="primary">Cadastrar</button></div>
+  </form></dialog>
+  <dialog id="protocolDistributeDialog" class="detail-dialog"><form method="dialog" class="dialog-card" id="protocolDistributeForm">
+    <div class="dialog-head"><div><small class="eyebrow">Distribuição</small><h3>Distribuir demanda</h3></div><button type="button" id="closeProtocolDistribute" class="icon">×</button></div>
+    <input type="hidden" id="pd_id">
+    <div class="form-grid">
+      <label>Responsável pela execução<select id="pd_responsavel" required><option value="">Selecione</option><option>Leidiana</option><option>Samara</option><option>Maira</option><option>Gilmaria</option><option>Byanne</option><option>Jhonata</option><option>Jacques</option></select></label>
+      <label>Prazo para execução (dias úteis)<input id="pd_prazo" type="number" min="1" required></label>
+      <label>Data limite<input id="pd_limite" type="date" readonly></label>
+      <label class="span-2">Orientação / observação<textarea id="pd_obs" rows="3"></textarea></label>
+    </div>
+    <div class="dialog-actions"><button type="button" id="cancelProtocolDistribute" class="ghost">Cancelar</button><button type="submit" class="primary">Distribuir</button></div>
+  </form></dialog>
+
   <dialog id="weeklyWhatsappDialog" class="detail-dialog">
     <div class="dialog-card">
       <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyWhatsapp" class="icon">×</button></div>
@@ -167,6 +197,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=15093004"></script>
+  <script src="app.js?v=01102601"></script>
 </body>
 </html>
