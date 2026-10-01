@@ -266,10 +266,10 @@
       $('protocolHistoryDialog').showModal();
       const {data,error}=await client.from('licitacoes_andamentos').select('id,situacao,andamento,proxima_providencia,impedimento,criado_por,criado_em').eq('licitacao_id',id).order('criado_em',{ascending:false});
       if(error){$('protocolHistoryContent').innerHTML=`<div class="history-empty">${esc(error.message)}</div>`;return;}
-      const rows=data||[];
+      const rows=data||[], hasReceiptEvent=rows.some(r=>r.situacao==='Recebida'), hasDistributionEvent=rows.some(r=>r.situacao==='Distribuída');
       const inicio=`<div class="history-item"><div class="history-meta"><strong>Entrada no Protocolo</strong><span>${protocolDateTime(x.encaminhado_em||x.criado_em)}</span></div><div class="history-changes">Demanda registrada${x.origem?' via '+esc(x.origem):''}.</div></div>`;
-      const receb=x.recebido_em?`<div class="history-item"><div class="history-meta"><strong>Recebimento</strong><span>${protocolDateTime(x.recebido_em)}</span></div><div class="history-changes">Demanda recebida no Protocolo.</div></div>`:'';
-      const dist=x.distribuido_em?`<div class="history-item"><div class="history-meta"><strong>Distribuição</strong><span>${protocolDateTime(x.distribuido_em)}</span></div><div class="history-changes">Distribuída para <strong>${esc(x.responsavel||'—')}</strong>${x.data_limite_execucao?' · prazo até '+brDate(x.data_limite_execucao):''}${x.observacao_distribuicao?'<br>'+esc(x.observacao_distribuicao):''}</div></div>`:'';
+      const receb=x.recebido_em&&!hasReceiptEvent?`<div class="history-item"><div class="history-meta"><strong>Recebimento</strong><span>${protocolDateTime(x.recebido_em)}</span></div><div class="history-changes">Demanda recebida no Protocolo.</div></div>`:'';
+      const dist=x.distribuido_em&&!hasDistributionEvent?`<div class="history-item"><div class="history-meta"><strong>Distribuição</strong><span>${protocolDateTime(x.distribuido_em)}</span></div><div class="history-changes">Distribuída para <strong>${esc(x.responsavel||'—')}</strong>${x.data_limite_execucao?' · prazo até '+brDate(x.data_limite_execucao):''}${x.observacao_distribuicao?'<br>'+esc(x.observacao_distribuicao):''}</div></div>`:'';
       const ands=rows.map(r=>`<div class="history-item"><div class="history-meta"><strong>${esc(r.situacao||'Andamento')}</strong><span>${protocolDateTime(r.criado_em)}</span></div><div class="history-changes"><strong>Andamento:</strong> ${esc(r.andamento||'—')}${r.proxima_providencia?'<br><strong>Próxima providência:</strong> '+esc(r.proxima_providencia):''}${r.impedimento?'<br><strong>Impedimento/observação:</strong> '+esc(r.impedimento):''}</div></div>`).join('');
       $('protocolHistoryContent').innerHTML=ands+dist+receb+inicio;
     }
@@ -386,9 +386,10 @@
     $('loginForm')?.addEventListener('submit',async e=>{ e.preventDefault(); setLoginMsg('Entrando...','info'); $('loginBtn').disabled=true; try{ await doLogin(($('email').value||'').trim(),$('password').value||''); await enterApp(); setLoginMsg(''); }catch(err){ await client.auth.signOut(); setLoginMsg(`Erro: ${err?.message||'Falha ao entrar.'}`,'error'); }finally{$('loginBtn').disabled=false;} });
     $('logoutBtn')?.addEventListener('click',async()=>{ await client.auth.signOut(); $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); });
     $('navMinhasDemandas')?.addEventListener('click',async()=>{if(!profile.modulo_licitacoes)return alert('Usuário sem acesso ao Protocolo.');await loadLicitacoes();protocolView='mine';showModule('licitacoes');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));$('navMinhasDemandas').classList.add('active');renderLicitacoes();});
-    $('newProtocolBtn')?.addEventListener('click',()=>{if(!protocolCanEdit())return alert('Seu acesso ao Protocolo é somente para visualização.'); $('p_tipo').value=''; $('p_novo_tipo').value=''; $('p_novo_tipo_wrap').classList.add('hidden'); $('protocolNewDialog').showModal(); });
+    $('newProtocolBtn')?.addEventListener('click',()=>{if(!protocolCanEdit())return alert('Seu acesso ao Protocolo é somente para visualização.'); $('p_tipo').value=''; $('p_novo_tipo').value=''; $('p_novo_tipo_wrap').classList.add('hidden'); $('p_modalidade').value=''; $('p_outra_modalidade').value=''; $('p_modalidade_wrap').classList.add('hidden'); $('p_outra_modalidade_wrap').classList.add('hidden'); $('protocolNewDialog').showModal(); });
     $('p_secretaria')?.addEventListener('change',()=>{const outro=$('p_secretaria').value==='__outro__';$('p_outra_secretaria_wrap')?.classList.toggle('hidden',!outro);if(outro)$('p_outra_secretaria')?.focus();});
     $('p_tipo')?.addEventListener('change',()=>{ const novo=$('p_tipo').value==='__novo__', proc=$('p_tipo').value==='Processo Licitatório'; $('p_novo_tipo_wrap').classList.toggle('hidden',!novo); $('p_novo_tipo').required=novo; $('p_modalidade_wrap')?.classList.toggle('hidden',!proc); $('p_modalidade').required=proc; if(novo) $('p_novo_tipo').focus(); });
+    $('p_modalidade')?.addEventListener('change',()=>{const outra=$('p_modalidade').value==='Outra';$('p_outra_modalidade_wrap')?.classList.toggle('hidden',!outra);$('p_outra_modalidade').required=outra;if(outra)$('p_outra_modalidade').focus();});
     $('closeProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close()); $('cancelProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close());
     $('closeProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close()); $('cancelProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close());
     $('pd_prazo')?.addEventListener('input',calcDistributionLimit); $('protocolSearch')?.addEventListener('input',renderLicitacoes); $('protocolStatus')?.addEventListener('change',renderLicitacoes);
@@ -405,7 +406,7 @@
         objeto:assunto,
         secretaria:($('p_secretaria').value==='__outro__'?$('p_outra_secretaria').value.trim():$('p_secretaria').value)||null,
         tipo_demanda:tipo,
-        modalidade:tipo==='Processo Licitatório'?($('p_modalidade').value||null):null,
+        modalidade:tipo==='Processo Licitatório'?($('p_modalidade').value==='Outra'?($('p_outra_modalidade').value.trim()||null):($('p_modalidade').value||null)):null,
         referencia:$('p_referencia').value.trim()||null,
         solicitante:$('p_solicitante').value.trim()||null,
         prioridade:$('p_prioridade').value||'Normal',
@@ -436,17 +437,10 @@
       const id=$('pd_id').value, responsavel=$('pd_responsavel').value, prazo=Number($('pd_prazo').value||0);
       if(!responsavel||!prazo){alert('Informe o responsável e o prazo para execução.');return;}
       const btn=e.submitter; if(btn){btn.disabled=true;btn.textContent='Distribuindo...';}
-      const limite=$('pd_limite').value, obs=$('pd_obs').value.trim(), agora=new Date().toISOString();
-      const payload={responsavel,distribuido_em:agora,prazo_execucao_dias:prazo,data_limite_execucao:limite||null};
-      if(obs) payload.observacao_distribuicao=obs;
-      const {data:updated,error}=await client.from('licitacoes').update(payload).eq('id',id).select('id,responsavel,distribuido_em,prazo_execucao_dias,data_limite_execucao').maybeSingle();
-      if(error){
-        alert('Não foi possível distribuir a demanda: '+error.message);
-      }else if(!updated){
-        alert('A distribuição não foi gravada. O registro não pôde ser atualizado; vamos verificar a permissão de atualização no Supabase.');
-      }else{
-        $('protocolDistributeDialog').close(); await loadLicitacoes();
-      }
+      const obs=$('pd_obs').value.trim();
+      const {error}=await client.rpc('distribuir_demanda_protocolo',{p_licitacao_id:id,p_responsavel:responsavel,p_prazo_dias:prazo,p_observacao:obs||null});
+      if(error) alert('Não foi possível distribuir a demanda: '+error.message);
+      else { $('protocolDistributeDialog').close(); await loadLicitacoes(); }
       if(btn){btn.disabled=false;btn.textContent='Distribuir';}
     });
     $('navLicitacoes')?.addEventListener('click',async()=>{if(!profile.modulo_licitacoes)return alert('Usuário sem acesso ao módulo Protocolo.');protocolView='all';await loadLicitacoes();showModule('licitacoes');}); $('navPlanejamento')?.addEventListener('click',()=>{if(!profile.modulo_planejamento)return alert('Usuário sem acesso ao módulo Planejamento.');showModule('planejamento');}); $('navCompras')?.addEventListener('click',()=>showModule('compras'));
