@@ -63,6 +63,30 @@
     }
     function enriched(x){ return {...x, deadline:deadlineInfo(x)}; }
 
+    function openDialog(x=null){
+      const novo=!x;
+      $('dialogTitle').textContent=novo?'Nova demanda':'Editar demanda';
+      $('itemId').value=x?.id||'';
+      $('f_nome').value=x?.demanda||'';
+      $('f_secretaria').value=x?.secretaria||'';
+      $('f_tipo').value=x?.tipo_objeto||'';
+      $('f_modalidade').value=x?.modalidade_prevista||'';
+      $('f_cotacoes').value=x?.situacao_cotacao||'';
+      $('f_qtd_cotacoes').value=x?.qtd_cotacoes??'';
+      $('f_inclusao').value=x?.data_inicio_planejamento?String(x.data_inicio_planejamento).slice(0,10):'';
+      $('f_prazo_interno').value=x?.prazo_interno_dias||20;
+      $('f_limite').value=x?.data_limite_planejamento?String(x.data_limite_planejamento).slice(0,10):'';
+      $('f_envio').value=x?.data_envio_licitacao?String(x.data_envio_licitacao).slice(0,10):'';
+      $('f_valor').value=x?.valor_estimado??'';
+      $('f_responsavel').value=x?.responsavel||'';
+      $('f_status').value=x?.situacao_geral||'Planejamento';
+      $('f_impedimentos').value=x?.impedimentos||'';
+      const obs=splitObs(x?.observacoes); $('f_obs').value=obs.obs; $('f_proxima').value=obs.proxima;
+      $('itemDialog').showModal();
+    }
+
+
+
     function uniqueValues(field){ return [...new Set(items.map(x => (x[field]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR')); }
     function fillSelect(id, values, label){ const el=$(id); if(!el) return; const current=el.value; el.innerHTML=`<option value="">${label}</option>`+values.map(v=>`<option>${esc(v)}</option>`).join(''); if(values.includes(current)) el.value=current; }
     function fillDatalist(id, values){ const el=$(id); if(el) el.innerHTML=values.map(v=>`<option value="${esc(v)}"></option>`).join(''); }
