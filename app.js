@@ -278,7 +278,7 @@
       const x=licitacoes.find(v=>String(v.id)===String(id)); if(!x)return;
       $('pd_id').value=id; $('pd_responsavel').value=''; $('pd_prazo').value=''; $('pd_limite').value=''; $('pd_obs').value=''; $('protocolDistributeDialog').showModal();
     }
-    function calcDistributionLimit(){ const x=licitacoes.find(v=>String(v.id)===String($('pd_id').value)); const base=x?.recebido_em?String(x.recebido_em).slice(0,10):new Date().toISOString().slice(0,10); $('pd_limite').value=$('pd_prazo').value?addBusinessDays(base,$('pd_prazo').value):''; }
+    function calcDistributionLimit(){ const base=new Date().toISOString().slice(0,10); $('pd_limite').value=$('pd_prazo').value?addBusinessDays(base,Number($('pd_prazo').value)):''; }
 
     function detailField(label,value,span=''){ return `<div class="detail-field ${span}"><small>${esc(label)}</small><div>${value||'—'}</div></div>`; }
     function openDetail(id){
