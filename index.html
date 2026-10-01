@@ -42,14 +42,14 @@
 
     <nav class="main-nav">
       <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento">Planejamento</button>
-      <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Licitações - Protocolo</button>
+      <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Protocolo</button>
       <button type="button" id="navCompras" class="nav-btn" data-module="compras">Compras</button>
     </nav>
 
     <main class="container">
       <section id="moduloLicitacoes" class="module-view hidden">
         <section class="hero-row">
-          <div><h2>Licitações - Protocolo</h2><p>Recepção, registro e distribuição das demandas do setor de Licitações.</p></div>
+          <div><h2>Protocolo</h2><p>Recepção, registro e distribuição das demandas do setor de Licitações.</p></div>
           <div class="hero-actions"><button type="button" id="weeklyProtocolBtn" class="ghost">📱 Resumo semanal</button><button type="button" id="newProtocolBtn" class="primary editor-only">+ Nova demanda</button></div>
         </section>
         <div class="protocol-tabs" style="display:flex;gap:8px;margin:0 0 14px">
@@ -169,7 +169,7 @@
     </form>
   </dialog>
   <dialog id="protocolNewDialog" class="detail-dialog"><form method="dialog" class="dialog-card" id="protocolNewForm">
-    <div class="dialog-head"><div><small class="eyebrow">Licitações - Protocolo</small><h3>Nova demanda</h3></div><button type="button" id="closeProtocolNew" class="icon">×</button></div>
+    <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3>Nova demanda</h3></div><button type="button" id="closeProtocolNew" class="icon">×</button></div>
     <div class="form-grid">
       <label>Tipo de demanda<select id="p_tipo" required><option value="">Selecione</option><option>Processo Licitatório</option><option>Reequilíbrio</option><option>Aditivo</option><option>Apostilamento</option><option>Impugnação / Esclarecimento</option><option value="__novo__">+ Criar novo tipo de demanda</option></select></label>
       <label id="p_novo_tipo_wrap" class="hidden">Novo tipo de demanda<input id="p_novo_tipo" placeholder="Digite o novo tipo"></label><label>Secretaria / Órgão<select id="p_secretaria" required><option value="">Selecione</option><option>Administração</option><option>Agricultura</option><option>Assistência Social</option><option>Cultura</option><option>Desenvolvimento Econômico</option><option>Educação</option><option>Esporte e Lazer</option><option>Finanças</option><option>Infraestrutura</option><option>Meio Ambiente</option><option>Planejamento</option><option>Saúde</option><option>Transporte</option><option>Turismo</option><option value="__outro__">Outro órgão / secretaria</option></select></label><label id="p_outra_secretaria_wrap" class="hidden">Outro órgão / secretaria<input id="p_outra_secretaria" placeholder="Informe o nome"></label>
@@ -219,7 +219,7 @@
 
   <dialog id="weeklyProtocolDialog" class="detail-dialog">
     <div class="dialog-card">
-      <div class="dialog-head"><div><small class="eyebrow">Licitações - Protocolo</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyProtocol" class="icon">×</button></div>
+      <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyProtocol" class="icon">×</button></div>
       <p class="muted">Acompanhamento do Protocolo com posição atual e movimentações da semana.</p>
       <textarea id="weeklyProtocolText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
       <div class="dialog-actions"><button type="button" id="copyWeeklyProtocol" class="primary">Copiar resumo</button></div>
@@ -227,6 +227,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102620"></script>
+  <script src="app.js?v=01102621"></script>
 </body>
 </html>
