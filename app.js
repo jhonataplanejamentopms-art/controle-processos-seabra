@@ -69,8 +69,8 @@
         if($('dialogTitle')) $('dialogTitle').textContent=novo?'Nova demanda':'Editar demanda';
         set('itemId',x?.id||''); set('f_nome',x?.demanda||''); set('f_secretaria',x?.secretaria||'');
         set('f_tipo',x?.tipo_objeto||''); set('f_modalidade',x?.modalidade_prevista||''); set('f_cotacoes',x?.situacao_cotacao||'');
-        set('f_qtd_cotacoes',x?.qtd_cotacoes??''); set('f_inclusao',x?.data_inicio_planejamento?String(x.data_inicio_planejamento).slice(0,10):'');
-        set('f_prazo_interno',x?.prazo_interno_dias||20); set('f_limite',x?.data_limite_planejamento?String(x.data_limite_planejamento).slice(0,10):'');
+        set('f_inclusao',x?.data_inicio_planejamento?String(x.data_inicio_planejamento).slice(0,10):'');
+        set('f_limite',x?.data_limite_planejamento?String(x.data_limite_planejamento).slice(0,10):'');
         set('f_envio',x?.data_envio_licitacao?String(x.data_envio_licitacao).slice(0,10):''); set('f_valor',x?.valor_estimado??'');
         set('f_responsavel',x?.responsavel||''); set('f_status',x?.situacao_geral||'Planejamento'); set('f_impedimentos',x?.impedimentos||'');
         const obs=splitObs(x?.observacoes); set('f_obs',obs.obs); set('f_proxima',obs.proxima);
@@ -190,62 +190,6 @@
     }
     async function loadItems(){ if(!profile.modulo_planejamento){items=[];return;} const {data,error}=await client.from('planejamentos').select('*').order('numero',{ascending:true}); if(error) throw error; items=data||[]; refreshDynamicOptions(); render(); }
 
-
-    const demandas3009=[
-      {demanda:'Equipamentos Odontológicos – CEO',proxima:'Juntar com a demanda anterior de equipamentos odontológicos.',observacoes:'Consolidar com a demanda anterior de equipamentos odontológicos.'},
-      {demanda:'Assessoria de Convênios',proxima:'Finalizar DFD em rascunho e elaborar pesquisa ampla de mercado.',observacoes:'DFD em rascunho para finalizar.'},
-      {demanda:'Publicidade / Publicações',proxima:'Consolidar Jornal, DOU, PNCP, Transparência e demandas correlatas.',observacoes:'Jornal + DOU + PNCP + Transparência e demandas correlatas.'},
-      {demanda:'Carro de Som',modalidade_prevista:'Credenciamento',proxima:'Realizar pesquisa de preços.',observacoes:'Credenciamento.'},
-      {demanda:'Chaveiro',proxima:'Aguardar retorno de Sirleide.',impedimentos:'Aguardando retorno de Sirleide.'},
-      {demanda:'Material de Expediente',proxima:'Dar andamento à demanda de planejamento.'},
-      {demanda:'Material de Limpeza',proxima:'Dar andamento à demanda de planejamento.'},
-      {demanda:'Exames de Imagem',proxima:'Iniciar planejamento da nova demanda.',observacoes:'Demanda nova.'},
-      {demanda:'Manutenção de Eletros em Geral',proxima:'Analisar demanda encaminhada por Compras.',observacoes:'Demanda encaminhada por Compras.'},
-      {demanda:'Painel de LED e Correlatos',secretaria:'Educação',proxima:'Verificar e confirmar a demanda com a Educação.'},
-      {demanda:'Playgrounds',proxima:'Aguardar retorno de Perla e verificar a situação.',impedimentos:'Aguardando retorno de Perla.'},
-      {demanda:'Serviço de Recarga de Impressoras',proxima:'Dar andamento à demanda de planejamento.'},
-      {demanda:'Conectores RJ e Correlatos',secretaria:'Educação',proxima:'Verificar com Perla a alteração da DFD (não emergencial).',observacoes:'Demanda da Educação; não emergencial.'},
-      {demanda:'Cadeira de Rodas',proxima:'Verificar com Perla o tamanho/especificação e alterar a DFD.'},
-      {demanda:'Equipamentos da Saúde',secretaria:'Saúde',proxima:'Acompanhar apoio da Saúde nas cotações dos itens específicos.',observacoes:'Já solicitado à Saúde apoio nas cotações de itens específicos: ar-condicionado, bomba de infusão e demais equipamentos correlatos.'}
-    ];
-    let importPlan=[];
-    function normName(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
-    function importPreview(){
-      importPlan=demandas3009.map(d=>{
-        const n=normName(d.demanda);
-        const exact=items.find(x=>normName(x.demanda)===n);
-        const similar=!exact?items.find(x=>{const a=normName(x.demanda); return a&&n&&(a.includes(n)||n.includes(a));}):null;
-        return {d,match:exact||similar||null,action:exact?'update':similar?'review':'create'};
-      });
-      $('importContent').innerHTML=importPlan.map((p,idx)=>`<div class="history-item">
-        <div class="history-meta"><strong>${idx+1}. ${esc(p.d.demanda)}</strong><span class="badge ${p.action==='create'?'ok':p.action==='update'?'info':'warn'}">${p.action==='create'?'Nova':p.action==='update'?'Atualizar existente':'Possível duplicidade'}</span></div>
-        ${p.match?`<div class="history-changes">Encontrado: <strong>${esc(p.match.demanda)}</strong></div>`:''}
-        <label>Ação <select data-import-action="${idx}"><option value="create" ${p.action==='create'?'selected':''}>Criar nova</option>${p.match?`<option value="update" ${p.action!=='create'?'selected':''}>Atualizar “${esc(p.match.demanda)}”</option>`:''}<option value="skip">Ignorar</option></select></label>
-      </div>`).join('');
-      $('importDialog').showModal();
-    }
-    async function runImport(){
-      const btn=$('confirmImport'); btn.disabled=true; btn.textContent='Atualizando...';
-      try{
-        for(let idx=0;idx<importPlan.length;idx++){
-          const p=importPlan[idx], action=document.querySelector(`[data-import-action="${idx}"]`)?.value||'skip';
-          if(action==='skip') continue;
-          if(action==='create'){
-            const payload={demanda:p.d.demanda,secretaria:p.d.secretaria||null,modalidade_prevista:p.d.modalidade_prevista||null,situacao_cotacao:'Planejamento',data_inicio_planejamento:'2026-09-30',data_limite_planejamento:addBusinessDays('2026-09-30',20),situacao_geral:'Planejamento',impedimentos:p.d.impedimentos||null,observacoes:joinObs(p.d.observacoes||'',p.d.proxima||'')};
-            const {error}=await client.from('planejamentos').insert(payload); if(error) throw new Error(`${p.d.demanda}: ${error.message}`);
-          }else if(action==='update'&&p.match){
-            const old=splitObs(p.match.observacoes);
-            const payload={observacoes:joinObs(p.d.observacoes||old.obs,p.d.proxima||old.proxima)};
-            if(p.d.secretaria&&!p.match.secretaria) payload.secretaria=p.d.secretaria;
-            if(p.d.modalidade_prevista&&!p.match.modalidade_prevista) payload.modalidade_prevista=p.d.modalidade_prevista;
-            if(p.d.impedimentos) payload.impedimentos=p.d.impedimentos;
-            const {error}=await client.from('planejamentos').update(payload).eq('id',p.match.id); if(error) throw new Error(`${p.d.demanda}: ${error.message}`);
-          }
-        }
-        $('importDialog').close(); await loadItems(); if(profile.modulo_licitacoes) await loadLicitacoes(); alert('Demandas atualizadas com sucesso.');
-      }catch(err){alert('Erro na atualização: '+(err?.message||err));}
-      finally{btn.disabled=false;btn.textContent='Confirmar atualização';}
-    }
 
     function showModule(module){
       ['Licitacoes','Planejamento','Compras','EtapaLicitacao'].forEach(n=>$(`modulo${n}`)?.classList.add('hidden'));
@@ -383,8 +327,8 @@
       $('detailTitle').textContent=`${x.numero?`Nº ${x.numero} · `:''}${x.demanda}`;
       $('detailContent').innerHTML=`<div class="detail-grid">
         ${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Tipo',esc(x.tipo_objeto||'—'))}${detailField('Modalidade',esc(x.modalidade_prevista||'—'))}
-        ${detailField('Situação das cotações',esc(x.situacao_cotacao||'—'))}${detailField('Qtd. cotações',x.qtd_cotacoes??'—')}${detailField('Situação geral',`<span class="badge">${esc(x.situacao_geral||'Sem status')}</span>`)}
-        ${detailField('Início',brDate(x.data_inicio_planejamento))}${detailField('Prazo interno',x.prazo_interno_dias?`${x.prazo_interno_dias} dias úteis`:'—')}${detailField('Data limite',`${brDate(x.data_limite_planejamento)}<br><span class="badge ${d.class}">${esc(d.label)}</span>`)}
+        ${detailField('Situação das cotações',esc(x.situacao_cotacao||'—'))}${detailField('Situação geral',`<span class="badge">${esc(x.situacao_geral||'Sem status')}</span>`)}
+        ${detailField('Início',brDate(x.data_inicio_planejamento))}${detailField('Data limite',`${brDate(x.data_limite_planejamento)}<br><span class="badge ${d.class}">${esc(d.label)}</span>`)}
         ${detailField('Envio à Licitação',brDate(x.data_envio_licitacao))}${detailField('Valor estimado',money(x.valor_estimado))}${detailField('Responsável',esc(x.responsavel||'—'))}
         ${detailField('Próxima providência',esc(splitObs(x.observacoes).proxima||'Sem providência registrada'),'span-3')}${detailField('Impedimentos',esc(x.impedimentos||'Sem impedimentos'),'span-3')}${detailField('Observações',esc(splitObs(x.observacoes).obs||'Sem observações'),'span-3')}
         ${detailField('Criado em',x.criado_em?new Date(x.criado_em).toLocaleString('pt-BR'):'—')}${detailField('Atualizado em',x.atualizado_em?new Date(x.atualizado_em).toLocaleString('pt-BR'):'—')}
@@ -393,7 +337,7 @@
     }
 
     function formatChange(k,oldV,newV){
-      const labels={demanda:'Demanda',secretaria:'Secretaria',tipo_objeto:'Tipo',modalidade_prevista:'Modalidade',situacao_cotacao:'Situação da cotação',qtd_cotacoes:'Qtd. cotações',data_inicio_planejamento:'Início',prazo_interno_dias:'Prazo interno',data_limite_planejamento:'Data limite',data_envio_licitacao:'Envio à Licitação',valor_estimado:'Valor estimado',responsavel:'Responsável',situacao_geral:'Situação geral',impedimentos:'Impedimentos',observacoes:'Observações'};
+      const labels={demanda:'Demanda',secretaria:'Secretaria',tipo_objeto:'Tipo',modalidade_prevista:'Modalidade',situacao_cotacao:'Situação da cotação',data_inicio_planejamento:'Início',data_limite_planejamento:'Data limite',data_envio_licitacao:'Envio à Licitação',valor_estimado:'Valor estimado',responsavel:'Responsável',situacao_geral:'Situação geral',impedimentos:'Impedimentos',observacoes:'Observações'};
       if(!(k in labels)) return '';
       const fmt=(v)=>k.startsWith('data_')?brDate(v):(k==='valor_estimado'?money(v):(v==null||v===''?'—':String(v)));
       return `<div><strong>${labels[k]}:</strong> ${esc(fmt(oldV))} → ${esc(fmt(newV))}</div>`;
@@ -512,7 +456,7 @@
     $('clearFilters')?.addEventListener('click',()=>{ ['search','statusFilter','quoteFilter','secretariaFilter','responsavelFilter','tipoFilter','modalidadeFilter','prazoFilter'].forEach(id=>{if($(id))$(id).value='';}); render(); });
     $('printBtn')?.addEventListener('click',()=>window.print());
     $('exportBtn')?.addEventListener('click',()=>{
-      const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Qtd. Cotações':x.qtd_cotacoes,'Início':brDate(x.data_inicio_planejamento),'Prazo Interno':x.prazo_interno_dias,'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio à Licitação':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Próxima Providência':splitObs(x.observacoes).proxima,'Observações':splitObs(x.observacoes).obs}));
+      const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Início':brDate(x.data_inicio_planejamento),'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio à Licitação':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Próxima Providência':splitObs(x.observacoes).proxima,'Observações':splitObs(x.observacoes).obs}));
       const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Planejamento'); XLSX.writeFile(wb,'planejamento_filtrado.xlsx');
     });
     $('weeklyProtocolBtn')?.addEventListener('click',openWeeklyProtocol);
@@ -521,10 +465,7 @@
     $('weeklyWhatsappBtn')?.addEventListener('click',openWeeklyWhatsapp);
     $('closeWeeklyWhatsapp')?.addEventListener('click',()=>$('weeklyWhatsappDialog').close());
     $('copyWeeklyWhatsapp')?.addEventListener('click',async()=>{ try{await navigator.clipboard.writeText($('weeklyWhatsappText').value); alert('Resumo copiado.');}catch(_){$('weeklyWhatsappText').select(); document.execCommand('copy'); alert('Resumo copiado.');} });
-    $('importDemandasBtn')?.addEventListener('click',importPreview); $('closeImport')?.addEventListener('click',()=>$('importDialog').close()); $('cancelImport')?.addEventListener('click',()=>$('importDialog').close()); $('confirmImport')?.addEventListener('click',runImport);
     $('newBtn')?.addEventListener('click',()=>openDialog()); $('closeDialog')?.addEventListener('click',()=>$('itemDialog').close()); $('cancelBtn')?.addEventListener('click',()=>$('itemDialog').close());
-    $('f_inclusao')?.addEventListener('change',()=>{ if($('f_inclusao').value&&$('f_prazo_interno').value) $('f_limite').value=addBusinessDays($('f_inclusao').value,$('f_prazo_interno').value); });
-    $('f_prazo_interno')?.addEventListener('change',()=>{ if($('f_inclusao').value&&$('f_prazo_interno').value) $('f_limite').value=addBusinessDays($('f_inclusao').value,$('f_prazo_interno').value); });
     $('tbody')?.addEventListener('click',e=>{ const btn=e.target.closest('button[data-action]'); if(btn){e.stopPropagation(); if(btn.dataset.action==='edit'){const x=items.find(v=>String(v.id)===String(btn.dataset.id)); if(x)openDialog(x);} return;} const row=e.target.closest('tr[data-id]'); if(row) openDetail(row.dataset.id); });
     $('closeDetail')?.addEventListener('click',()=>$('detailDialog').close()); $('detailEditBtn')?.addEventListener('click',()=>{const x=items.find(v=>String(v.id)===String(currentDetailId)); $('detailDialog').close(); if(x)openDialog(x);});
     $('historyBtn')?.addEventListener('click',openHistory); $('closeHistory')?.addEventListener('click',()=>$('historyDialog').close());
