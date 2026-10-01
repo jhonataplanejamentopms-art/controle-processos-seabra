@@ -44,6 +44,7 @@
       <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento">Planejamento</button>
       <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Protocolo</button>
       <button type="button" id="navCompras" class="nav-btn" data-module="compras">Compras</button>
+      <button type="button" id="navEtapaLicitacao" class="nav-btn" data-module="etapaLicitacao">Licitação <span id="etapaLicitacaoCount"></span></button>
       <span class="nav-spacer"></span>
       <button type="button" id="navMinhasDemandas" class="nav-btn nav-my">Minhas demandas <span id="protocolMineCount"></span></button>
     </nav>
@@ -64,6 +65,14 @@
           <thead><tr><th>Entrada</th><th>Tipo</th><th>Demanda / Assunto</th><th>Secretaria</th><th>Recebida em</th><th>Responsável</th><th>Distribuída em</th><th>Prazo</th><th>Data limite</th><th>Situação</th><th>Ação</th></tr></thead>
           <tbody id="licitacaoTbody"></tbody>
         </table></div><div id="licitacaoEmpty" class="empty hidden">Nenhuma demanda no Protocolo.</div></section>
+      </section>
+
+      <section id="moduloEtapaLicitacao" class="module-view hidden">
+        <section class="hero-row"><div><h2>Licitação</h2><p>Processos encaminhados após a conclusão da fase administrativa.</p></div></section>
+        <section class="kpis" id="etapaLicitacaoKpis"></section>
+        <section class="filters"><input id="etapaLicitacaoSearch" type="search" placeholder="Buscar processo, secretaria, modalidade ou responsável"><select id="etapaLicitacaoStatus"><option value="">Todas as situações</option><option>Encaminhada à Licitação</option><option>Preparando publicação</option><option>Publicado</option><option>Sessão realizada</option><option>Em julgamento/habilitação</option><option>Homologado</option><option>Fracassado</option><option>Deserto</option><option>Revogado</option><option>Anulado</option></select></section>
+        <section class="result-summary"><span id="etapaLicitacaoResultCount">0 processos</span><span>Encaminhamento → publicação → sessão → resultado.</span></section>
+        <section class="table-card"><div class="table-wrap"><table><thead><tr><th>Demanda</th><th>Modalidade</th><th>Secretaria</th><th>Responsável</th><th>Sessão</th><th>Situação</th><th>Ação</th></tr></thead><tbody id="etapaLicitacaoTbody"></tbody></table></div><div id="etapaLicitacaoEmpty" class="empty hidden">Nenhum processo encaminhado para Licitação.</div></section>
       </section>
 
       <section id="moduloPlanejamento" class="module-view">
@@ -237,6 +246,15 @@
       <label class="span-2">Observação<textarea id="pf_obs" rows="3"></textarea></label>
     </div><div class="dialog-actions"><button type="button" id="cancelProtocolForward" class="ghost">Cancelar</button><button type="submit" class="primary">Encaminhar</button></div>
   </form></dialog>
+  <dialog id="etapaLicitacaoProgressDialog" class="detail-dialog"><form id="etapaLicitacaoProgressForm" class="dialog-card">
+    <div class="dialog-head"><div><small class="eyebrow">Licitação</small><h3>Atualizar etapa da Licitação</h3></div><button type="button" id="closeEtapaLicitacaoProgress" class="icon">×</button></div>
+    <input type="hidden" id="el_id"><div class="form-grid">
+      <label>Situação<select id="el_situacao" required><option>Preparando publicação</option><option>Publicado</option><option>Sessão realizada</option><option>Em julgamento/habilitação</option><option>Homologado</option><option>Fracassado</option><option>Deserto</option><option>Revogado</option><option>Anulado</option></select></label>
+      <label>Data da sessão<input id="el_data_sessao" type="date"></label>
+      <label class="span-2">Andamento / observação<textarea id="el_andamento" rows="3" required></textarea></label>
+      <label class="span-2">Próxima providência<textarea id="el_proxima" rows="2"></textarea></label>
+    </div><div class="dialog-actions"><button type="button" id="cancelEtapaLicitacaoProgress" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar atualização</button></div>
+  </form></dialog>
   <dialog id="weeklyProtocolDialog" class="detail-dialog">
     <div class="dialog-card">
       <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyProtocol" class="icon">×</button></div>
@@ -247,6 +265,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102626"></script>
+  <script src="app.js?v=01102627"></script>
 </body>
 </html>
