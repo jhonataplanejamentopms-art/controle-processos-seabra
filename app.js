@@ -181,8 +181,11 @@
 
     async function loadProfile(){
       const {data:{user},error:userError}=await client.auth.getUser(); if(userError) throw userError; if(!user) throw new Error('Usuário não autenticado.');
-      const {data,error}=await client.from('perfis').select('perfil,nome,ativo,modulo_planejamento,modulo_compras,modulo_licitacoes,pode_receber_licitacao').eq('id',user.id).single();
-      if(error) throw error; profile=data||{perfil:'visualizador'}; if(!profile.ativo) throw new Error('Usuário desativado.');
+      const {data,error}=await client.from('perfis').select('perfil,nome,ativo,modulo_planejamento,modulo_compras,modulo_licitacoes,pode_receber_licitacao').eq('id',user.id).maybeSingle();
+      if(error) throw error;
+      if(!data) throw new Error('Cadastro aguardando aprovação do administrador.');
+      profile=data;
+      if(!profile.ativo) throw new Error('Cadastro aguardando aprovação ou usuário desativado.');
       $('userBadge').textContent=`${profile.nome||user.email} · ${profile.perfil}`;
     }
     async function loadItems(){ if(!profile.modulo_planejamento){items=[];return;} const {data,error}=await client.from('planejamentos').select('*').order('numero',{ascending:true}); if(error) throw error; items=data||[]; refreshDynamicOptions(); render(); }
@@ -377,9 +380,31 @@
       }).join('');
     }
 
+    function signupMsg(t,type=''){const el=$('signupMsg');if(el){el.textContent=t||'';el.className='login-msg '+type;}}
+    async function requestSignup(){
+      const nome=$('su_nome').value.trim(), email=$('su_email').value.trim(), senha=$('su_senha').value, senha2=$('su_senha2').value;
+      if(senha!==senha2) throw new Error('As senhas não conferem.');
+      if(senha.length<8) throw new Error('A senha deve possuir pelo menos 8 caracteres.');
+      const {data,error}=await client.auth.signUp({email,password:senha,options:{data:{nome,solicitacao_acesso:true}}});
+      if(error) throw error;
+      await client.auth.signOut();
+      return data;
+    }
+    async function loadAdminUsers(){
+      const {data,error}=await client.from('perfis').select('id,nome,email,perfil,ativo,modulo_planejamento,modulo_licitacoes,modulo_compras,pode_receber_licitacao').order('nome');
+      if(error) throw error;
+      $('adminUsersList').innerHTML=(data||[]).map(u=>`<div class="table-card" style="padding:14px;margin-bottom:10px"><strong>${esc(u.nome||u.email||'Usuário')}</strong><div class="muted">${esc(u.email||'')} · ${u.ativo?'Ativo':'Aguardando/Bloqueado'}</div><div style="display:flex;gap:12px;flex-wrap:wrap;margin:10px 0"><label><input type="checkbox" data-perm="modulo_planejamento" data-uid="${esc(u.id)}" ${u.modulo_planejamento?'checked':''}> Planejamento</label><label><input type="checkbox" data-perm="modulo_licitacoes" data-uid="${esc(u.id)}" ${u.modulo_licitacoes?'checked':''}> Licitações</label><label><input type="checkbox" data-perm="modulo_compras" data-uid="${esc(u.id)}" ${u.modulo_compras?'checked':''}> Compras</label><label><input type="checkbox" data-perm="pode_receber_licitacao" data-uid="${esc(u.id)}" ${u.pode_receber_licitacao?'checked':''}> Receber protocolo</label></div><button class="primary user-approve" data-uid="${esc(u.id)}">${u.ativo?'Salvar permissões':'Aprovar e liberar'}</button> <button class="ghost user-block" data-uid="${esc(u.id)}">${u.ativo?'Bloquear':'Manter bloqueado'}</button></div>`).join('')||'<p>Nenhum usuário encontrado.</p>';
+    }
+
     async function enterApp(){ await loadProfile(); if(profile.modulo_planejamento) await loadItems(); if(profile.modulo_licitacoes) await loadLicitacoes(); $('loginView').classList.add('hidden'); $('appView').classList.remove('hidden'); showModule(profile.modulo_planejamento?'planejamento':'licitacoes'); }
     async function doLogin(email,password){ if(!configured) throw new Error('Supabase não configurado.'); const {data,error}=await client.auth.signInWithPassword({email,password}); if(error) throw error; if(!data?.session) throw new Error('Sessão não criada.'); }
 
+    $('openSignupBtn')?.addEventListener('click',()=>{$('signupForm').reset();signupMsg('');$('signupDialog').showModal();});
+    $('closeSignup')?.addEventListener('click',()=>$('signupDialog').close()); $('cancelSignup')?.addEventListener('click',()=>$('signupDialog').close());
+    $('signupForm')?.addEventListener('submit',async e=>{e.preventDefault();signupMsg('Enviando...','info');try{await requestSignup();signupMsg('Solicitação enviada. Aguarde a aprovação do administrador.','info');setTimeout(()=>$('signupDialog').close(),1800);}catch(err){signupMsg('Erro: '+(err?.message||err),'error');}});
+    $('adminUsersBtn')?.addEventListener('click',async()=>{try{await loadAdminUsers();$('adminUsersDialog').showModal();}catch(err){alert(err.message);}});
+    $('closeAdminUsers')?.addEventListener('click',()=>$('adminUsersDialog').close());
+    $('adminUsersList')?.addEventListener('click',async e=>{const b=e.target.closest('[data-uid]');if(!b||(!b.classList.contains('user-approve')&&!b.classList.contains('user-block')))return;const id=b.dataset.uid;if(b.classList.contains('user-block')){const {error}=await client.from('perfis').update({ativo:false}).eq('id',id);if(error)return alert(error.message);return loadAdminUsers();}const card=b.closest('.table-card'),payload={ativo:true,perfil:'editor'};card.querySelectorAll('input[data-perm]').forEach(c=>payload[c.dataset.perm]=c.checked);const {error}=await client.from('perfis').update(payload).eq('id',id);if(error)return alert(error.message);await loadAdminUsers();});
     $('loginForm')?.addEventListener('submit',async e=>{ e.preventDefault(); setLoginMsg('Entrando...','info'); $('loginBtn').disabled=true; try{ await doLogin(($('email').value||'').trim(),$('password').value||''); await enterApp(); setLoginMsg(''); }catch(err){ setLoginMsg(`Erro: ${err?.message||'Falha ao entrar.'}`,'error'); }finally{$('loginBtn').disabled=false;} });
     $('logoutBtn')?.addEventListener('click',async()=>{ await client.auth.signOut(); $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); });
     $('newProtocolBtn')?.addEventListener('click',()=>{ $('p_tipo').value=''; $('p_novo_tipo').value=''; $('p_novo_tipo_wrap').classList.add('hidden'); $('protocolNewDialog').showModal(); });
