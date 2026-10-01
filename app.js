@@ -64,25 +64,18 @@
     function enriched(x){ return {...x, deadline:deadlineInfo(x)}; }
 
     function openDialog(x=null){
-      const novo=!x;
-      $('dialogTitle').textContent=novo?'Nova demanda':'Editar demanda';
-      $('itemId').value=x?.id||'';
-      $('f_nome').value=x?.demanda||'';
-      $('f_secretaria').value=x?.secretaria||'';
-      $('f_tipo').value=x?.tipo_objeto||'';
-      $('f_modalidade').value=x?.modalidade_prevista||'';
-      $('f_cotacoes').value=x?.situacao_cotacao||'';
-      $('f_qtd_cotacoes').value=x?.qtd_cotacoes??'';
-      $('f_inclusao').value=x?.data_inicio_planejamento?String(x.data_inicio_planejamento).slice(0,10):'';
-      $('f_prazo_interno').value=x?.prazo_interno_dias||20;
-      $('f_limite').value=x?.data_limite_planejamento?String(x.data_limite_planejamento).slice(0,10):'';
-      $('f_envio').value=x?.data_envio_licitacao?String(x.data_envio_licitacao).slice(0,10):'';
-      $('f_valor').value=x?.valor_estimado??'';
-      $('f_responsavel').value=x?.responsavel||'';
-      $('f_status').value=x?.situacao_geral||'Planejamento';
-      $('f_impedimentos').value=x?.impedimentos||'';
-      const obs=splitObs(x?.observacoes); $('f_obs').value=obs.obs; $('f_proxima').value=obs.proxima;
-      $('itemDialog').showModal();
+      try{
+        const novo=!x, set=(id,val)=>{const el=$(id);if(el)el.value=val??'';};
+        if($('dialogTitle')) $('dialogTitle').textContent=novo?'Nova demanda':'Editar demanda';
+        set('itemId',x?.id||''); set('f_nome',x?.demanda||''); set('f_secretaria',x?.secretaria||'');
+        set('f_tipo',x?.tipo_objeto||''); set('f_modalidade',x?.modalidade_prevista||''); set('f_cotacoes',x?.situacao_cotacao||'');
+        set('f_qtd_cotacoes',x?.qtd_cotacoes??''); set('f_inclusao',x?.data_inicio_planejamento?String(x.data_inicio_planejamento).slice(0,10):'');
+        set('f_prazo_interno',x?.prazo_interno_dias||20); set('f_limite',x?.data_limite_planejamento?String(x.data_limite_planejamento).slice(0,10):'');
+        set('f_envio',x?.data_envio_licitacao?String(x.data_envio_licitacao).slice(0,10):''); set('f_valor',x?.valor_estimado??'');
+        set('f_responsavel',x?.responsavel||''); set('f_status',x?.situacao_geral||'Planejamento'); set('f_impedimentos',x?.impedimentos||'');
+        const obs=splitObs(x?.observacoes); set('f_obs',obs.obs); set('f_proxima',obs.proxima);
+        const dlg=$('itemDialog'); if(!dlg) throw new Error('Janela de Planejamento não encontrada.'); dlg.showModal();
+      }catch(err){ alert('Erro ao abrir o formulário do Planejamento: '+(err?.message||err)); }
     }
 
 
