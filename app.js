@@ -259,6 +259,12 @@
     async function loadLicitacoes(){
       if(!profile.modulo_licitacoes){ licitacoes=[]; renderLicitacoes(); return; }
       const {data,error}=await client.rpc('listar_licitacoes_painel'); if(error) throw error;
+      // A função antiga do painel não retorna os novos campos do Protocolo.
+      // Busca esses campos diretamente e combina pelo id para refletir a distribuição imediatamente.
+      const {data:dist,error:distError}=await client.from('licitacoes').select('id,responsavel,distribuido_em,prazo_execucao_dias,data_limite_execucao,observacao_distribuicao');
+      if(distError) throw distError;
+      const distMap=new Map((dist||[]).map(x=>[String(x.id),x]));
+      (data||[]).forEach(x=>Object.assign(x,distMap.get(String(x.id))||{}));
       // Marco inicial do novo Protocolo (01/10/2026): o painel não carrega o histórico anterior.
       // Durante a fase de testes, mantém somente duas demandas legadas:
       // 1 aguardando recebimento e 1 aguardando distribuição.
@@ -337,9 +343,11 @@
       const limite=$('pd_limite').value, obs=$('pd_obs').value.trim(), agora=new Date().toISOString();
       const payload={responsavel,distribuido_em:agora,prazo_execucao_dias:prazo,data_limite_execucao:limite||null};
       if(obs) payload.observacao_distribuicao=obs;
-      const {error}=await client.from('licitacoes').update(payload).eq('id',id);
+      const {data:updated,error}=await client.from('licitacoes').update(payload).eq('id',id).select('id,responsavel,distribuido_em,prazo_execucao_dias,data_limite_execucao').maybeSingle();
       if(error){
-        alert('Para concluir a distribuição, ainda precisamos criar os campos de distribuição no banco de dados. Erro: '+error.message);
+        alert('Não foi possível distribuir a demanda: '+error.message);
+      }else if(!updated){
+        alert('A distribuição não foi gravada. O registro não pôde ser atualizado; vamos verificar a permissão de atualização no Supabase.');
       }else{
         $('protocolDistributeDialog').close(); await loadLicitacoes();
       }
