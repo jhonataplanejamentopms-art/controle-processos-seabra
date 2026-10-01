@@ -9,7 +9,7 @@
     const client = configured ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
 
     let items = [];
-    let profile = { perfil:'visualizador', nome:'', pode_receber_licitacao:false };
+    let profile = { perfil:'visualizador', nome:'', pode_receber_licitacao:false }; let protocolView='all';
     let currentDetailId = null;
     let planningScope = 'ongoing';
     let licitacoes = [];
@@ -296,18 +296,22 @@
       const d=dateOnly(x.data_limite_execucao), now=today();
       if(d<now) return 'atrasado'; const n=businessDaysDiff(now,d); return n<=2?'vence7':'noprazo';
     }
+    function protocolCanEdit(){return String(profile.nivel_licitacoes||'').toLowerCase()==='editor'||['administrador','admin'].includes(String(profile.perfil||'').toLowerCase());}
+    function isMyProtocol(x){const me=String(profile.nome||'').trim().toLowerCase(), r=String(x.responsavel||'').trim().toLowerCase(); if(!me||!r)return false; return me===r||me.startsWith(r+' ')||r.startsWith(me.split(' ')[0]);}
     function renderLicitacoes(){
       if(!$('licitacaoTbody')) return;
+      const mine=licitacoes.filter(isMyProtocol); if($('protocolMineCount')) $('protocolMineCount').textContent=mine.length?'('+mine.length+')':'';
+      const source=protocolView==='mine'?mine:licitacoes;
       const q=($('protocolSearch')?.value||'').toLowerCase(), st=$('protocolStatus')?.value||'';
-      const list=licitacoes.filter(x=>{const s=protocolStatus(x); const hay=[x.objeto,x.secretaria,x.responsavel,x.tipo_demanda,x.referencia].join(' ').toLowerCase();return(!q||hay.includes(q))&&(!st||s===st);});
+      const list=source.filter(x=>{const s=protocolStatus(x); const hay=[x.objeto,x.secretaria,x.responsavel,x.tipo_demanda,x.referencia].join(' ').toLowerCase();return(!q||hay.includes(q))&&(!st||s===st);});
       $('licitacaoTbody').innerHTML=list.map(x=>{const s=protocolStatus(x), dl=protocolDeadline(x);return `<tr>
         <td>${brDate(x.encaminhado_em||x.criado_em)}</td><td>${esc(x.tipo_demanda||'Processo Licitatório')}</td><td><strong>${esc(x.objeto||'—')}</strong></td><td>${esc(x.secretaria||'—')}</td>
         <td>${x.recebido_em?new Date(x.recebido_em).toLocaleString('pt-BR'):'—'}</td><td>${esc(x.responsavel||'—')}</td><td>${x.distribuido_em?new Date(x.distribuido_em).toLocaleString('pt-BR'):'—'}</td>
         <td>${x.prazo_execucao_dias?esc(x.prazo_execucao_dias)+' dias úteis':'—'}</td><td>${x.data_limite_execucao?`<span class="badge ${dl}">${brDate(x.data_limite_execucao)}</span>`:'—'}</td><td><span class="badge ${s==='Distribuído'?'info':s==='Aguardando recebimento'?'waiting':''}">${esc(s)}</span></td>
-        <td>${!x.recebido_em&&profile.pode_receber_licitacao?`<button class="receive-btn" data-receive="${esc(x.id)}">Receber</button>`:x.recebido_em&&!x.responsavel?`<button class="primary" data-distribute="${esc(x.id)}">Distribuir</button>`:'—'}</td>
+        <td>${!x.recebido_em&&profile.pode_receber_licitacao&&protocolCanEdit()?`<button class="receive-btn" data-receive="${esc(x.id)}">Receber</button>`:x.recebido_em&&!x.responsavel&&protocolCanEdit()?`<button class="primary" data-distribute="${esc(x.id)}">Distribuir</button>`:'—'}</td>
       </tr>`;}).join('');
       $('licitacaoEmpty')?.classList.toggle('hidden',list.length>0); $('licitacaoResultCount').textContent=`${list.length} demanda${list.length===1?'':'s'}`;
-      const stats=[['Aguardando recebimento',licitacoes.filter(x=>protocolStatus(x)==='Aguardando recebimento').length],['Aguardando distribuição',licitacoes.filter(x=>protocolStatus(x)==='Aguardando distribuição').length],['Distribuídas',licitacoes.filter(x=>protocolStatus(x)==='Distribuído').length],['Pendentes',licitacoes.filter(x=>protocolStatus(x)==='Pendente').length]];
+      const stats=[['Aguardando recebimento',source.filter(x=>protocolStatus(x)==='Aguardando recebimento').length],['Aguardando distribuição',source.filter(x=>protocolStatus(x)==='Aguardando distribuição').length],['Distribuídas',source.filter(x=>protocolStatus(x)==='Distribuído').length],['Pendentes',source.filter(x=>protocolStatus(x)==='Pendente').length]];
       $('licitacaoKpis').innerHTML=stats.map(([n,v])=>`<div class="kpi"><small>${n}</small><b>${v}</b></div>`).join('');
     }
     async function loadLicitacoes(){
@@ -334,10 +338,12 @@
       renderLicitacoes();
     }
     async function receiveLicitacao(id){
+      if(!protocolCanEdit()||!profile.pode_receber_licitacao)return alert('Você não possui permissão para receber demandas.');
       if(!confirm('Confirmar o recebimento desta demanda? A data e hora serão registradas.')) return;
       const {error}=await client.rpc('receber_licitacao',{p_licitacao_id:id}); if(error){alert(error.message);return;} await loadLicitacoes();
     }
     function openDistribution(id){
+      if(!protocolCanEdit())return alert('Seu acesso ao Protocolo é somente para visualização.');
       const x=licitacoes.find(v=>String(v.id)===String(id)); if(!x)return;
       $('pd_id').value=id; $('pd_responsavel').value=''; $('pd_prazo').value=''; $('pd_limite').value=''; $('pd_obs').value=''; $('protocolDistributeDialog').showModal();
     }
@@ -407,7 +413,9 @@
     $('adminUsersList')?.addEventListener('click',async e=>{const b=e.target.closest('[data-uid]');if(!b||(!b.classList.contains('user-approve')&&!b.classList.contains('user-block')))return;const id=b.dataset.uid;if(b.classList.contains('user-block')){const {error}=await client.from('perfis').update({ativo:false}).eq('id',id);if(error)return alert(error.message);return loadAdminUsers();}const card=b.closest('.table-card'),payload={ativo:true,perfil:'editor'}; card.querySelectorAll('select[data-level]').forEach(c=>payload[c.dataset.level]=c.value); payload.modulo_planejamento=payload.nivel_planejamento!=='sem_acesso'; payload.modulo_licitacoes=payload.nivel_licitacoes!=='sem_acesso'; payload.modulo_compras=payload.nivel_compras!=='sem_acesso'; const special=card.querySelector('input[data-special="pode_receber_licitacao"]'); payload.pode_receber_licitacao=!!special?.checked;const {data:salvo,error}=await client.from('perfis').update(payload).eq('id',id).select('id,nome,nivel_planejamento,nivel_licitacoes,nivel_compras,ativo').maybeSingle();if(error)return alert('Não foi possível salvar: '+error.message);if(!salvo)return alert('Nenhuma alteração foi gravada. Verifique as permissões do administrador.');await loadAdminUsers();const aviso=$('adminUsersNotice');if(aviso){aviso.textContent='✓ Alterações de '+(salvo.nome||'usuário')+' salvas com sucesso.';aviso.classList.remove('hidden');aviso.style.background='#e8f5e9';aviso.style.color='#1b5e20';setTimeout(()=>aviso.classList.add('hidden'),4000);} });
     $('loginForm')?.addEventListener('submit',async e=>{ e.preventDefault(); setLoginMsg('Entrando...','info'); $('loginBtn').disabled=true; try{ await doLogin(($('email').value||'').trim(),$('password').value||''); await enterApp(); setLoginMsg(''); }catch(err){ await client.auth.signOut(); setLoginMsg(`Erro: ${err?.message||'Falha ao entrar.'}`,'error'); }finally{$('loginBtn').disabled=false;} });
     $('logoutBtn')?.addEventListener('click',async()=>{ await client.auth.signOut(); $('appView').classList.add('hidden'); $('loginView').classList.remove('hidden'); });
-    $('newProtocolBtn')?.addEventListener('click',()=>{ $('p_tipo').value=''; $('p_novo_tipo').value=''; $('p_novo_tipo_wrap').classList.add('hidden'); $('protocolNewDialog').showModal(); });
+    $('protocolAllTab')?.addEventListener('click',()=>{protocolView='all';renderLicitacoes();});
+    $('protocolMineTab')?.addEventListener('click',()=>{protocolView='mine';renderLicitacoes();});
+    $('newProtocolBtn')?.addEventListener('click',()=>{if(!protocolCanEdit())return alert('Seu acesso ao Protocolo é somente para visualização.'); $('p_tipo').value=''; $('p_novo_tipo').value=''; $('p_novo_tipo_wrap').classList.add('hidden'); $('protocolNewDialog').showModal(); });
     $('p_tipo')?.addEventListener('change',()=>{ const novo=$('p_tipo').value==='__novo__'; $('p_novo_tipo_wrap').classList.toggle('hidden',!novo); $('p_novo_tipo').required=novo; if(novo) $('p_novo_tipo').focus(); });
     $('closeProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close()); $('cancelProtocolNew')?.addEventListener('click',()=>$('protocolNewDialog').close());
     $('closeProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close()); $('cancelProtocolDistribute')?.addEventListener('click',()=>$('protocolDistributeDialog').close());
