@@ -259,13 +259,16 @@
     async function loadLicitacoes(){
       if(!profile.modulo_licitacoes){ licitacoes=[]; renderLicitacoes(); return; }
       const {data,error}=await client.rpc('listar_licitacoes_painel'); if(error) throw error;
-      // Marco inicial do novo Protocolo: oculta a base legada e mantém apenas Caixa de Som para testes.
-      // Novas demandas criadas a partir de 01/10/2026 permanecem visíveis normalmente.
-      licitacoes=(data||[]).filter(x=>{
-        const nome=String(x.objeto||'').toLowerCase();
-        const criado=String(x.criado_em||x.encaminhado_em||'').slice(0,10);
-        return nome.includes('caixa de som') || criado>='2026-10-01';
-      });
+      // Marco inicial do novo Protocolo (01/10/2026): o painel não carrega o histórico anterior.
+      // Durante a fase de testes, mantém somente duas demandas legadas:
+      // 1 aguardando recebimento e 1 aguardando distribuição.
+      const base=(data||[]);
+      const novas=base.filter(x=>String(x.criado_em||x.encaminhado_em||'').slice(0,10)>='2026-10-01');
+      const antigas=base.filter(x=>String(x.criado_em||x.encaminhado_em||'').slice(0,10)<'2026-10-01');
+      const caixa=antigas.find(x=>String(x.objeto||'').toLowerCase().includes('caixa de som')&&!x.recebido_em)
+        || antigas.find(x=>!x.recebido_em);
+      const aguardandoDistribuicao=antigas.find(x=>x.recebido_em&&!x.responsavel&&x.id!==caixa?.id);
+      licitacoes=[...(caixa?[caixa]:[]),...(aguardandoDistribuicao?[aguardandoDistribuicao]:[]),...novas.filter(x=>x.id!==caixa?.id&&x.id!==aguardandoDistribuicao?.id)];
       renderLicitacoes();
     }
     async function receiveLicitacao(id){
