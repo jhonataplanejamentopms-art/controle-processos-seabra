@@ -97,8 +97,10 @@
     }
 
     function applyRole(){
-      document.querySelectorAll('.editor-only').forEach(el=>el.classList.toggle('hidden',!['administrador','editor'].includes(profile.perfil)));
-      document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',profile.perfil!=='administrador'));
+      const perfil=String(profile.perfil||'').trim().toLowerCase();
+      const podeEditar=perfil==='administrador'||perfil==='admin'||perfil==='editor';
+      document.querySelectorAll('.editor-only').forEach(el=>el.classList.toggle('hidden',!podeEditar));
+      document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',!(perfil==='administrador'||perfil==='admin')));
     }
 
     function renderKpis(){
