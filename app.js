@@ -258,7 +258,15 @@
     }
     async function loadLicitacoes(){
       if(!profile.modulo_licitacoes){ licitacoes=[]; renderLicitacoes(); return; }
-      const {data,error}=await client.rpc('listar_licitacoes_painel'); if(error) throw error; licitacoes=data||[]; renderLicitacoes();
+      const {data,error}=await client.rpc('listar_licitacoes_painel'); if(error) throw error;
+      // Marco inicial do novo Protocolo: oculta a base legada e mantém apenas Caixa de Som para testes.
+      // Novas demandas criadas a partir de 01/10/2026 permanecem visíveis normalmente.
+      licitacoes=(data||[]).filter(x=>{
+        const nome=String(x.objeto||'').toLowerCase();
+        const criado=String(x.criado_em||x.encaminhado_em||'').slice(0,10);
+        return nome.includes('caixa de som') || criado>='2026-10-01';
+      });
+      renderLicitacoes();
     }
     async function receiveLicitacao(id){
       if(!confirm('Confirmar o recebimento desta demanda? A data e hora serão registradas.')) return;
