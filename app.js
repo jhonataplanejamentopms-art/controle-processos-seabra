@@ -181,7 +181,7 @@
 
     async function loadProfile(){
       const {data:{user},error:userError}=await client.auth.getUser(); if(userError) throw userError; if(!user) throw new Error('Usuário não autenticado.');
-      const {data,error}=await client.from('perfis').select('perfil,nome,ativo,modulo_planejamento,modulo_compras,modulo_licitacoes,pode_receber_licitacao,nivel_planejamento,nivel_licitacoes,nivel_compras').eq('id',user.id).maybeSingle();
+      const {data,error}=await client.from('perfis').select('id,perfil,nome,ativo,modulo_planejamento,modulo_compras,modulo_licitacoes,pode_receber_licitacao,nivel_planejamento,nivel_licitacoes,nivel_compras').eq('id',user.id).maybeSingle();
       if(error) throw error;
       if(!data) throw new Error('Cadastro aguardando aprovação do administrador.');
       profile=data;
@@ -498,11 +498,11 @@
     $('copyWeeklyWhatsapp')?.addEventListener('click',async()=>{ try{await navigator.clipboard.writeText($('weeklyWhatsappText').value); alert('Resumo copiado.');}catch(_){$('weeklyWhatsappText').select(); document.execCommand('copy'); alert('Resumo copiado.');} });
     $('newBtn')?.addEventListener('click',()=>openDialog()); $('closeDialog')?.addEventListener('click',()=>$('itemDialog').close()); $('cancelBtn')?.addEventListener('click',()=>$('itemDialog').close());
     $('tbody')?.addEventListener('click',e=>{ const btn=e.target.closest('button[data-action]'); if(btn){e.stopPropagation(); if(btn.dataset.action==='edit'){const x=items.find(v=>String(v.id)===String(btn.dataset.id)); if(x)openDialog(x);} return;} const row=e.target.closest('tr[data-id]'); if(row) openDetail(row.dataset.id); });
-    $('closeDetail')?.addEventListener('click',()=>$('detailDialog').close()); $('detailEditBtn')?.addEventListener('click',()=>{const x=items.find(v=>String(v.id)===String(currentDetailId)); $('detailDialog').close(); if(x)openDialog(x);});
+    $('closeDetail')?.addEventListener('click',()=>$('detailDialog').close()); $('detailEditBtn')?.addEventListener('click',()=>{if(!profile.modulo_planejamento||!(['editor','administrador'].includes(String(profile.nivel_planejamento||profile.perfil||'').toLowerCase())||isMaster()))return;const x=items.find(v=>String(v.id)===String(currentDetailId)); $('detailDialog').close(); if(x)openDialog(x);});
     $('historyBtn')?.addEventListener('click',openHistory); $('closeHistory')?.addEventListener('click',()=>$('historyDialog').close());
-    $('detailDeleteBtn')?.addEventListener('click',async()=>{ if(profile.perfil!=='administrador'||!currentDetailId)return; if(!confirm('Excluir definitivamente esta demanda? Esta ação ficará registrada no histórico.'))return; const {error}=await client.from('planejamentos').delete().eq('id',currentDetailId); if(error)return alert(error.message); $('detailDialog').close(); await loadItems(); });
+    $('detailDeleteBtn')?.addEventListener('click',async()=>{ if(!isMaster()||!currentDetailId)return; if(!confirm('ATENÇÃO: deseja excluir totalmente esta demanda do Planejamento e todos os registros relacionados? Esta ação não poderá ser desfeita.'))return; const {error}=await client.rpc('admin_excluir_planejamento_total',{p_planejamento_id:currentDetailId}); if(error)return alert('Não foi possível excluir a demanda: '+error.message); $('detailDialog').close(); await loadItems(); if(profile.modulo_licitacoes)await loadLicitacoes(); });
     $('itemForm')?.addEventListener('submit',async e=>{
-      e.preventDefault(); const id=$('itemId').value;
+      e.preventDefault(); if(!profile.modulo_planejamento||!(['editor','administrador'].includes(String(profile.nivel_planejamento||profile.perfil||'').toLowerCase())||isMaster()))return alert('Seu acesso ao Planejamento é somente para visualização.'); const id=$('itemId').value;
       const payload={demanda:$('f_nome').value.trim(),secretaria:$('f_secretaria').value.trim()||null,tipo_objeto:$('f_tipo').value||null,modalidade_prevista:$('f_modalidade').value.trim()||null,situacao_cotacao:$('f_cotacoes').value||null,data_inicio_planejamento:$('f_inclusao').value||null,data_limite_planejamento:$('f_limite').value||null,data_envio_licitacao:$('f_envio').value||null,valor_estimado:$('f_valor').value===''?null:Number($('f_valor').value),responsavel:$('f_responsavel').value.trim()||null,situacao_geral:$('f_status').value||null,impedimentos:$('f_impedimentos').value.trim()||null,observacoes:joinObs($('f_obs').value,$('f_proxima').value)};
       if(payload.data_envio_licitacao) payload.situacao_geral='Enviado p/ Licitação';
       // Em novos cadastros, não envia data_envio_licitacao no INSERT.
