@@ -505,11 +505,6 @@
       e.preventDefault(); if(!profile.modulo_planejamento||!(['editor','administrador'].includes(String(profile.nivel_planejamento||profile.perfil||'').toLowerCase())||isMaster()))return alert('Seu acesso ao Planejamento é somente para visualização.'); const id=$('itemId').value;
       const payload={demanda:$('f_nome').value.trim(),secretaria:$('f_secretaria').value.trim()||null,tipo_objeto:$('f_tipo').value||null,modalidade_prevista:$('f_modalidade').value.trim()||null,situacao_cotacao:$('f_cotacoes').value||null,data_inicio_planejamento:$('f_inclusao').value||null,data_limite_planejamento:$('f_limite').value||null,data_envio_licitacao:$('f_envio').value||null,valor_estimado:$('f_valor').value===''?null:Number($('f_valor').value),responsavel:$('f_responsavel').value.trim()||null,situacao_geral:$('f_status').value||null,impedimentos:$('f_impedimentos').value.trim()||null,observacoes:joinObs($('f_obs').value,$('f_proxima').value)};
       if(payload.data_envio_licitacao) payload.situacao_geral='Enviado p/ Protocolo';
-      // Em novos cadastros, não envia data_envio_licitacao no INSERT.
-      // O trigger legado do Supabase cria o registro de Protocolo em BEFORE INSERT,
-      // antes de o planejamento existir, causando violação da chave estrangeira.
-      // O encaminhamento para o Protocolo ocorre depois, via UPDATE do planejamento já criado.
-      if(!id) delete payload.data_envio_licitacao;
       const res=id?await client.from('planejamentos').update(payload).eq('id',id):await client.from('planejamentos').insert(payload); if(res.error)return alert(res.error.message); $('itemDialog').close(); await loadItems(); if(profile.modulo_licitacoes) await loadLicitacoes();
     });
 
