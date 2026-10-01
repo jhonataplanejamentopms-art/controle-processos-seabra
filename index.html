@@ -48,7 +48,7 @@
       <section id="moduloLicitacoes" class="module-view hidden">
         <section class="hero-row">
           <div><h2>Licitações - Protocolo</h2><p>Recepção, registro e distribuição das demandas do setor de Licitações.</p></div>
-          <div class="hero-actions"><button type="button" id="newProtocolBtn" class="primary editor-only">+ Nova demanda</button></div>
+          <div class="hero-actions"><button type="button" id="weeklyProtocolBtn" class="ghost">📱 Resumo semanal</button><button type="button" id="newProtocolBtn" class="primary editor-only">+ Nova demanda</button></div>
         </section>
         <section class="kpis" id="licitacaoKpis"></section>
         <section class="filters">
@@ -196,7 +196,16 @@
     </div>
   </dialog>
 
+  <dialog id="weeklyProtocolDialog" class="detail-dialog">
+    <div class="dialog-card">
+      <div class="dialog-head"><div><small class="eyebrow">Licitações - Protocolo</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyProtocol" class="icon">×</button></div>
+      <p class="muted">Acompanhamento do Protocolo com posição atual e movimentações da semana.</p>
+      <textarea id="weeklyProtocolText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
+      <div class="dialog-actions"><button type="button" id="copyWeeklyProtocol" class="primary">Copiar resumo</button></div>
+    </div>
+  </dialog>
+
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102608"></script>
+  <script src="app.js?v=01102609"></script>
 </body>
 </html>
