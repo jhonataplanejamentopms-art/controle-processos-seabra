@@ -290,11 +290,14 @@
       // Durante a fase de testes, mantém somente duas demandas legadas:
       // 1 aguardando recebimento e 1 aguardando distribuição.
       const base=(data||[]);
-      // Fase de testes: não exibe nenhuma demanda antiga automaticamente.
-      // Mantém somente Caixa de Som e, se existir, uma segunda demanda já recebida para testar distribuição.
+      // Marco inicial do Protocolo: preserva Caixa de Som para teste e passa a exibir
+      // toda demanda efetivamente encaminhada pelo Planejamento a partir de 01/10/2026.
       const caixa=base.find(x=>String(x.objeto||'').toLowerCase().includes('caixa de som'));
-      const testeDistribuicao=base.find(x=>x.recebido_em&&!x.responsavel&&x.id!==caixa?.id&&String(x.objeto||'').toLowerCase().includes('teste protocolo'));
-      licitacoes=[...(caixa?[caixa]:[]),...(testeDistribuicao?[testeDistribuicao]:[])];
+      const novas=base.filter(x=>{
+        const enviado=String(x.encaminhado_em||'').slice(0,10);
+        return enviado>='2026-10-01' && x.id!==caixa?.id;
+      });
+      licitacoes=[...(caixa?[caixa]:[]),...novas];
       renderLicitacoes();
     }
     async function receiveLicitacao(id){
