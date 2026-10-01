@@ -98,7 +98,9 @@
 
     function applyRole(){
       const perfil=String(profile.perfil||'').trim().toLowerCase();
-      const podeEditar=perfil==='administrador'||perfil==='admin'||perfil==='editor';
+      // Quem possui acesso ao módulo Planejamento pode criar/editar demandas.
+      // As funções internas do setor não devem bloquear a operação do módulo.
+      const podeEditar=!!profile.modulo_planejamento;
       document.querySelectorAll('.editor-only').forEach(el=>el.classList.toggle('hidden',!podeEditar));
       document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',!(perfil==='administrador'||perfil==='admin')));
     }
