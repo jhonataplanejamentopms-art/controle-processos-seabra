@@ -70,7 +70,7 @@
       <section id="moduloEtapaLicitacao" class="module-view hidden">
         <section class="hero-row"><div><h2>Licitação</h2><p>Processos encaminhados após a conclusão da fase administrativa.</p></div></section>
         <section class="kpis" id="etapaLicitacaoKpis"></section>
-        <section class="filters"><input id="etapaLicitacaoSearch" type="search" placeholder="Buscar processo, secretaria, modalidade ou responsável"><select id="etapaLicitacaoStatus"><option value="">Todas as situações</option><option>Encaminhada à Licitação</option><option>Preparando publicação</option><option>Publicado</option><option>Sessão realizada</option><option>Em julgamento/habilitação</option><option>Homologado</option><option>Fracassado</option><option>Deserto</option><option>Revogado</option><option>Anulado</option></select></section>
+        <section class="filters"><input id="etapaLicitacaoSearch" type="search" placeholder="Buscar processo, secretaria, modalidade ou responsável"><select id="etapaLicitacaoScope"><option value="ongoing">Em andamento</option><option value="finished">Finalizados</option><option value="all">Todos</option></select><select id="etapaLicitacaoStatus"><option value="">Todas as situações</option><option>Encaminhada à Licitação</option><option>Preparando publicação</option><option>Publicado</option><option>Sessão realizada</option><option>Em julgamento/habilitação</option><option>Homologado</option><option>Fracassado</option><option>Deserto</option><option>Revogado</option><option>Anulado</option></select></section>
         <section class="result-summary"><span id="etapaLicitacaoResultCount">0 processos</span><span>Encaminhamento → publicação → sessão → resultado.</span></section>
         <section class="table-card"><div class="table-wrap"><table><thead><tr><th>Demanda</th><th>Modalidade</th><th>Secretaria</th><th>Responsável</th><th>Sessão</th><th>Situação</th><th>Ação</th></tr></thead><tbody id="etapaLicitacaoTbody"></tbody></table></div><div id="etapaLicitacaoEmpty" class="empty hidden">Nenhum processo encaminhado para Licitação.</div></section>
       </section>
@@ -251,6 +251,10 @@
     <input type="hidden" id="el_id"><div class="form-grid">
       <label>Situação<select id="el_situacao" required><option>Preparando publicação</option><option>Publicado</option><option>Sessão realizada</option><option>Em julgamento/habilitação</option><option>Homologado</option><option>Fracassado</option><option>Deserto</option><option>Revogado</option><option>Anulado</option></select></label>
       <label>Data da sessão<input id="el_data_sessao" type="date"></label>
+      <label>Nº da Licitação<input id="el_numero_licitacao" placeholder="Ex.: PE 45/2026"></label>
+      <label>Data de publicação<input id="el_data_publicacao" type="date"></label>
+      <label>Data de homologação<input id="el_data_homologacao" type="date"></label>
+      <label>Valor homologado<input id="el_valor_homologado" type="number" min="0" step="0.01" placeholder="0,00"></label>
       <label class="span-2">Andamento / observação<textarea id="el_andamento" rows="3" required></textarea></label>
       <label class="span-2">Próxima providência<textarea id="el_proxima" rows="2"></textarea></label>
     </div><div class="dialog-actions"><button type="button" id="cancelEtapaLicitacaoProgress" class="ghost">Cancelar</button><button type="submit" class="primary">Salvar atualização</button></div>
@@ -265,6 +269,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102627"></script>
+  <script src="app.js?v=01102628"></script>
 </body>
 </html>
