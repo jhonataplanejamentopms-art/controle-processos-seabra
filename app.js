@@ -262,7 +262,7 @@
     }
     async function openProtocolHistory(id){
       const x=licitacoes.find(v=>String(v.id)===String(id)); if(!x)return;
-      $('protocolHistoryTitle').textContent=x.objeto||'Histórico da demanda';
+      $('protocolHistoryTitle').textContent=x.objeto||'Histórico da demanda'; documentsContext={planejamentoId:x.planejamento_id||null,licitacaoId:x.id,phase:x.encaminhado_licitacao_em?'Licitação':'Protocolo'};
       $('protocolHistorySummary').innerHTML=`<div class="detail-grid">${detailField('Tipo',esc(x.tipo_demanda||'Processo Licitatório'))}${detailField('Modalidade',esc(x.modalidade||'—'))}${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Responsável',esc(x.responsavel||'—'))}${detailField('Situação atual',esc(x.situacao_execucao||protocolStatus(x)))}${detailField('Próxima providência',esc(x.proxima_providencia||'—'),'span-3')}</div>`;
       $('protocolHistoryContent').innerHTML='<div class="history-empty">Carregando histórico...</div>';
       $('masterDemandId').value=id; $('protocolMasterActions')?.classList.toggle('hidden',!isMaster()); $('protocolHistoryDialog').showModal();
@@ -349,6 +349,59 @@
     function calcDistributionLimit(){ const base=new Date().toISOString().slice(0,10); $('pd_limite').value=$('pd_prazo').value?addBusinessDays(base,Number($('pd_prazo').value)):''; }
 
     function detailField(label,value,span=''){ return `<div class="detail-field ${span}"><small>${esc(label)}</small><div>${value||'—'}</div></div>`; }
+    let documentsContext={planejamentoId:null,licitacaoId:null,phase:'Planejamento'};
+    function safeFileName(name){return String(name||'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'arquivo';}
+    function canManageDocument(d){return isMaster()||String(d.criado_por||'')===String(profile.id||'');}
+    async function resolveLicitacaoIdForPlanning(planejamentoId){
+      const local=licitacoes.find(x=>String(x.planejamento_id||'')===String(planejamentoId));
+      if(local)return local.id;
+      const {data}=await client.from('licitacoes').select('id').eq('planejamento_id',planejamentoId).maybeSingle();
+      return data?.id||null;
+    }
+    async function openDocuments({planejamentoId=null,licitacaoId=null,phase='Planejamento',title='Documentos da demanda'}={}){
+      documentsContext={planejamentoId,licitacaoId,phase};$('documentsPlanejamentoId').value=planejamentoId||'';$('documentsLicitacaoId').value=licitacaoId||'';$('documentsPhase').value=phase;$('documentsTitle').textContent=title;$('documentsFiles').value='';$('documentsDialog').showModal();await loadDocuments();
+    }
+    async function loadDocuments(){
+      const {planejamentoId,licitacaoId}=documentsContext;let ors=[];
+      if(planejamentoId)ors.push('planejamento_id.eq.'+planejamentoId);
+      if(licitacaoId)ors.push('licitacao_id.eq.'+licitacaoId);
+      if(!ors.length){$('documentsList').innerHTML='<div class="history-empty">Demanda sem vínculo documental.</div>';return;}
+      const {data,error}=await client.from('documentos_demandas').select('*').or(ors.join(',')).order('criado_em',{ascending:false});
+      if(error){$('documentsList').innerHTML='<div class="history-empty">'+esc(error.message)+'</div>';return;}
+      const rows=data||[];if(!rows.length){$('documentsList').innerHTML='<div class="history-empty">Nenhum documento anexado.</div>';return;}
+      $('documentsList').innerHTML=rows.map(d=>{const manage=canManageDocument(d),kb=d.tamanho_bytes?Math.ceil(Number(d.tamanho_bytes)/1024)+' KB':'—';return '<div class="document-item"><div><strong>'+esc(d.nome_original)+'</strong><small>'+esc(d.fase_inclusao)+' · '+kb+' · '+(d.criado_em?new Date(d.criado_em).toLocaleString('pt-BR'):'—')+'</small></div><div class="document-actions"><button type="button" class="ghost" data-doc-download="'+esc(d.id)+'">Baixar</button>'+(manage?'<button type="button" class="ghost" data-doc-replace="'+esc(d.id)+'">Substituir</button><button type="button" class="danger-btn" data-doc-delete="'+esc(d.id)+'">Excluir</button>':'')+'</div></div>';}).join('');
+    }
+    async function uploadDocuments(){
+      const files=[...($('documentsFiles').files||[])];if(!files.length)return alert('Selecione pelo menos um arquivo.');
+      const {planejamentoId,licitacaoId,phase}=documentsContext;const btn=$('uploadDocumentsBtn');btn.disabled=true;btn.textContent='Enviando...';
+      try{
+        for(const file of files){if(file.size>52428800)throw new Error('O arquivo "'+file.name+'" ultrapassa 50 MB.');
+          const id=crypto.randomUUID(),root=planejamentoId||licitacaoId,path=(root||'demanda')+'/'+id+'/'+safeFileName(file.name);
+          const up=await client.storage.from('documentos-demandas').upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});if(up.error)throw up.error;
+          const ins=await client.from('documentos_demandas').insert({id,planejamento_id:planejamentoId||null,licitacao_id:licitacaoId||null,nome_arquivo:safeFileName(file.name),nome_original:file.name,caminho_storage:path,tipo_mime:file.type||null,tamanho_bytes:file.size,fase_inclusao:phase,criado_por:profile.id});
+          if(ins.error){await client.storage.from('documentos-demandas').remove([path]);throw ins.error;}
+        }
+        $('documentsFiles').value='';await loadDocuments();
+      }catch(err){alert('Não foi possível enviar: '+(err?.message||err));}
+      finally{btn.disabled=false;btn.textContent='Enviar arquivo(s)';}
+    }
+    async function downloadDocument(id){
+      const {data:d,error}=await client.from('documentos_demandas').select('*').eq('id',id).single();if(error)return alert(error.message);
+      const dl=await client.storage.from('documentos-demandas').download(d.caminho_storage);if(dl.error)return alert('Não foi possível baixar: '+dl.error.message);
+      const url=URL.createObjectURL(dl.data),a=document.createElement('a');a.href=url;a.download=d.nome_original||d.nome_arquivo||'documento';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+    async function deleteDocument(id){
+      const {data:d,error}=await client.from('documentos_demandas').select('*').eq('id',id).single();if(error)return alert(error.message);if(!canManageDocument(d))return alert('Somente o autor do arquivo ou o administrador pode excluí-lo.');if(!confirm('Excluir o arquivo "'+d.nome_original+'"?'))return;
+      const rm=await client.storage.from('documentos-demandas').remove([d.caminho_storage]);if(rm.error)return alert('Não foi possível excluir o arquivo: '+rm.error.message);
+      const del=await client.from('documentos_demandas').delete().eq('id',id);if(del.error)return alert('Arquivo removido do Storage, mas houve erro ao remover o registro: '+del.error.message);await loadDocuments();
+    }
+    async function replaceDocument(id){
+      const {data:d,error}=await client.from('documentos_demandas').select('*').eq('id',id).single();if(error)return alert(error.message);if(!canManageDocument(d))return alert('Somente o autor do arquivo ou o administrador pode substituí-lo.');
+      const inp=document.createElement('input');inp.type='file';inp.onchange=async()=>{const file=inp.files?.[0];if(!file)return;if(file.size>52428800)return alert('O arquivo ultrapassa 50 MB.');const newPath=d.caminho_storage.replace(/[^/]+$/,safeFileName(file.name));const up=await client.storage.from('documentos-demandas').upload(newPath,file,{contentType:file.type||'application/octet-stream',upsert:newPath===d.caminho_storage});if(up.error)return alert('Não foi possível substituir: '+up.error.message);
+        const upd=await client.from('documentos_demandas').update({nome_arquivo:safeFileName(file.name),nome_original:file.name,caminho_storage:newPath,tipo_mime:file.type||null,tamanho_bytes:file.size,atualizado_por:profile.id,atualizado_em:new Date().toISOString()}).eq('id',id);
+        if(upd.error){if(newPath!==d.caminho_storage)await client.storage.from('documentos-demandas').remove([newPath]);return alert('Não foi possível atualizar o documento: '+upd.error.message);}
+        if(newPath!==d.caminho_storage)await client.storage.from('documentos-demandas').remove([d.caminho_storage]);await loadDocuments();};inp.click();
+    }
     function openDetail(id){
       const x=items.find(v=>String(v.id)===String(id)); if(!x) return; currentDetailId=id; const d=deadlineInfo(x);
       $('detailTitle').textContent=`${x.numero?`Nº ${x.numero} · `:''}${x.demanda}`;
@@ -448,7 +501,7 @@
       else { $('protocolNewDialog').close(); $('protocolNewForm').reset(); $('p_novo_tipo_wrap').classList.add('hidden'); await loadLicitacoes(); }
       if(btn){btn.disabled=false;btn.textContent='Cadastrar';}
     });
-    $('closeProtocolHistory')?.addEventListener('click',()=>$('protocolHistoryDialog').close());
+    $('closeProtocolHistory')?.addEventListener('click',()=>$('protocolHistoryDialog').close()); $('protocolDocumentsBtn')?.addEventListener('click',()=>openDocuments({...documentsContext,title:$('protocolHistoryTitle').textContent||'Documentos da demanda'}));
     $('masterManageDemand')?.addEventListener('click',()=>openMasterDemand($('masterDemandId').value));
     $('closeMasterDemand')?.addEventListener('click',()=>$('masterDemandDialog').close());
     $('cancelMasterDemand')?.addEventListener('click',()=>$('masterDemandDialog').close());
@@ -458,6 +511,7 @@
     $('closeProtocolForward')?.addEventListener('click',()=>$('protocolForwardDialog').close()); $('cancelProtocolForward')?.addEventListener('click',()=>$('protocolForwardDialog').close());
     $('protocolProgressForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('pa_id').value,x=licitacoes.find(v=>String(v.id)===String(id));if(!x||!isMyProtocol(x))return alert('Somente o responsável designado pode atualizar esta demanda.');const sit=$('pa_situacao').value,andamento=$('pa_andamento').value.trim(),proxima=$('pa_proxima').value.trim(),imp=$('pa_impedimento').value.trim(),agora=new Date().toISOString();if(!andamento)return alert('Informe o andamento ou providência realizada.');const reg=await client.rpc('registrar_andamento_licitacao',{p_licitacao_id:id,p_situacao:sit,p_andamento:andamento,p_proxima_providencia:proxima||null,p_impedimento:imp||null});if(reg.error)return alert('Não foi possível registrar o andamento: '+reg.error.message);$('protocolProgressDialog').close();$('protocolProgressForm').reset();await loadLicitacoes();});
     $('protocolForwardForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('pf_id').value,x=licitacoes.find(v=>String(v.id)===String(id));if(!x||!isMyProtocol(x))return alert('Somente o responsável designado pode encaminhar esta demanda.');const resp=$('pf_responsavel').value,data=$('pf_data').value||null,obs=$('pf_obs').value.trim();if(!resp)return alert('Informe o responsável pela Licitação.');if(['Pregão Eletrônico','Dispensa Eletrônica','Concorrência Eletrônica'].includes(x.modalidade)&&!data)return alert('Informe a data prevista / sessão para esta modalidade.');const u=await client.rpc('encaminhar_demanda_licitacao',{p_licitacao_id:id,p_responsavel_licitacao:resp,p_data_sessao:data,p_observacao:obs||null});if(u.error)return alert('Não foi possível encaminhar: '+u.error.message);$('protocolForwardDialog').close();$('protocolForwardForm').reset();await loadLicitacoes();});
+    $('closeDocuments')?.addEventListener('click',()=>$('documentsDialog').close());$('uploadDocumentsBtn')?.addEventListener('click',uploadDocuments);$('documentsList')?.addEventListener('click',e=>{const d=e.target.closest('[data-doc-download]'),r=e.target.closest('[data-doc-replace]'),x=e.target.closest('[data-doc-delete]');if(d)return downloadDocument(d.dataset.docDownload);if(r)return replaceDocument(r.dataset.docReplace);if(x)return deleteDocument(x.dataset.docDelete);});
     $('navEtapaLicitacao')?.addEventListener('click',async()=>{if(!profile.modulo_licitacoes)return alert('Usuário sem acesso à Licitação.');await loadLicitacoes();showModule('etapaLicitacao');renderEtapaLicitacao();});
     $('etapaLicitacaoSearch')?.addEventListener('input',renderEtapaLicitacao);$('etapaLicitacaoStatus')?.addEventListener('change',renderEtapaLicitacao);$('etapaLicitacaoScope')?.addEventListener('change',renderEtapaLicitacao);
     $('closeEtapaLicitacaoProgress')?.addEventListener('click',()=>$('etapaLicitacaoProgressDialog').close());$('cancelEtapaLicitacaoProgress')?.addEventListener('click',()=>$('etapaLicitacaoProgressDialog').close());
@@ -498,7 +552,7 @@
     $('copyWeeklyWhatsapp')?.addEventListener('click',async()=>{ try{await navigator.clipboard.writeText($('weeklyWhatsappText').value); alert('Resumo copiado.');}catch(_){$('weeklyWhatsappText').select(); document.execCommand('copy'); alert('Resumo copiado.');} });
     $('newBtn')?.addEventListener('click',()=>openDialog()); $('closeDialog')?.addEventListener('click',()=>$('itemDialog').close()); $('cancelBtn')?.addEventListener('click',()=>$('itemDialog').close());
     $('tbody')?.addEventListener('click',e=>{ const btn=e.target.closest('button[data-action]'); if(btn){e.stopPropagation(); if(btn.dataset.action==='edit'){const x=items.find(v=>String(v.id)===String(btn.dataset.id)); if(x)openDialog(x);} return;} const row=e.target.closest('tr[data-id]'); if(row) openDetail(row.dataset.id); });
-    $('closeDetail')?.addEventListener('click',()=>$('detailDialog').close()); $('detailEditBtn')?.addEventListener('click',()=>{if(!profile.modulo_planejamento||!(['editor','administrador'].includes(String(profile.nivel_planejamento||profile.perfil||'').toLowerCase())||isMaster()))return;const x=items.find(v=>String(v.id)===String(currentDetailId)); $('detailDialog').close(); if(x)openDialog(x);});
+    $('closeDetail')?.addEventListener('click',()=>$('detailDialog').close()); $('planningDocumentsBtn')?.addEventListener('click',async()=>{const x=items.find(v=>String(v.id)===String(currentDetailId));if(!x)return;const lid=await resolveLicitacaoIdForPlanning(x.id);openDocuments({planejamentoId:x.id,licitacaoId:lid,phase:'Planejamento',title:x.demanda||'Documentos da demanda'});}); $('detailEditBtn')?.addEventListener('click',()=>{if(!profile.modulo_planejamento||!(['editor','administrador'].includes(String(profile.nivel_planejamento||profile.perfil||'').toLowerCase())||isMaster()))return;const x=items.find(v=>String(v.id)===String(currentDetailId)); $('detailDialog').close(); if(x)openDialog(x);});
     $('historyBtn')?.addEventListener('click',openHistory); $('closeHistory')?.addEventListener('click',()=>$('historyDialog').close());
     $('detailDeleteBtn')?.addEventListener('click',async()=>{ if(!isMaster()||!currentDetailId)return; if(!confirm('ATENÇÃO: deseja excluir totalmente esta demanda do Planejamento e todos os registros relacionados? Esta ação não poderá ser desfeita.'))return; const {error}=await client.rpc('admin_excluir_planejamento_total',{p_planejamento_id:currentDetailId}); if(error)return alert('Não foi possível excluir a demanda: '+error.message); $('detailDialog').close(); await loadItems(); if(profile.modulo_licitacoes)await loadLicitacoes(); });
     $('itemForm')?.addEventListener('submit',async e=>{
