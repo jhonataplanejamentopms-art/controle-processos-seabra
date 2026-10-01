@@ -248,7 +248,7 @@
     }
 
     function showModule(module){
-      ['Licitacoes','Planejamento','Compras'].forEach(n=>$(`modulo${n}`)?.classList.add('hidden'));
+      ['Licitacoes','Planejamento','Compras','EtapaLicitacao'].forEach(n=>$(`modulo${n}`)?.classList.add('hidden'));
       $(`modulo${module.charAt(0).toUpperCase()+module.slice(1)}`)?.classList.remove('hidden');
       document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.module===module));
     }
@@ -329,6 +329,17 @@
       const ands=rows.map(r=>`<div class="history-item"><div class="history-meta"><strong>${esc(r.situacao||'Andamento')}</strong><span>${protocolDateTime(r.criado_em)}</span></div><div class="history-changes"><strong>Andamento:</strong> ${esc(r.andamento||'—')}${r.proxima_providencia?'<br><strong>Próxima providência:</strong> '+esc(r.proxima_providencia):''}${r.impedimento?'<br><strong>Impedimento/observação:</strong> '+esc(r.impedimento):''}</div></div>`).join('');
       $('protocolHistoryContent').innerHTML=ands+dist+receb+inicio;
     }
+    function renderEtapaLicitacao(){
+      if(!$('etapaLicitacaoTbody'))return;
+      const all=licitacoes.filter(x=>x.encaminhado_licitacao_em);
+      if($('etapaLicitacaoCount'))$('etapaLicitacaoCount').textContent=all.length?'('+all.length+')':'';
+      const q=($('etapaLicitacaoSearch')?.value||'').toLowerCase(),st=$('etapaLicitacaoStatus')?.value||'';
+      const list=all.filter(x=>{const sit=x.situacao_execucao||'Encaminhada à Licitação';const hay=[x.objeto,x.secretaria,x.modalidade,x.responsavel_licitacao].join(' ').toLowerCase();return(!q||hay.includes(q))&&(!st||sit===st);});
+      $('etapaLicitacaoTbody').innerHTML=list.map(x=>`<tr><td><button type="button" class="link-button" data-lic-history="${esc(x.id)}"><strong>${esc(x.objeto||'—')}</strong></button></td><td>${esc(x.modalidade||'—')}</td><td>${esc(x.secretaria||'—')}</td><td>${esc(x.responsavel_licitacao||'—')}</td><td>${brDate(x.data_sessao)}</td><td><span class="badge info">${esc(x.situacao_execucao||'Encaminhada à Licitação')}</span></td><td><button class="primary" data-lic-progress="${esc(x.id)}">Atualizar</button></td></tr>`).join('');
+      $('etapaLicitacaoEmpty')?.classList.toggle('hidden',list.length>0);$('etapaLicitacaoResultCount').textContent=`${list.length} processo${list.length===1?'':'s'}`;
+      const hoje=new Date().toISOString().slice(0,10),prox=all.filter(x=>x.data_sessao&&String(x.data_sessao).slice(0,10)>=hoje).length;
+      $('etapaLicitacaoKpis').innerHTML=[['Encaminhados',all.length],['Publicados',all.filter(x=>x.situacao_execucao==='Publicado').length],['Sessões previstas',prox],['Homologados',all.filter(x=>x.situacao_execucao==='Homologado').length]].map(([n,v])=>`<div class="kpi"><small>${n}</small><b>${v}</b></div>`).join('');
+    }
     async function loadLicitacoes(){
       if(!profile.modulo_licitacoes){ licitacoes=[]; renderLicitacoes(); return; }
       const {data,error}=await client.rpc('listar_licitacoes_painel'); if(error) throw error;
@@ -350,7 +361,7 @@
         return (x.origem==='Protocolo'||enviado>='2026-10-01') && x.id!==caixa?.id;
       });
       licitacoes=[...(caixa?[caixa]:[]),...novas];
-      renderLicitacoes();
+      renderLicitacoes(); renderEtapaLicitacao();
     }
     async function receiveLicitacao(id){
       if(!protocolCanEdit()||!profile.pode_receber_licitacao)return alert('Você não possui permissão para receber demandas.');
@@ -467,7 +478,12 @@
     $('closeProtocolProgress')?.addEventListener('click',()=>$('protocolProgressDialog').close()); $('cancelProtocolProgress')?.addEventListener('click',()=>$('protocolProgressDialog').close());
     $('closeProtocolForward')?.addEventListener('click',()=>$('protocolForwardDialog').close()); $('cancelProtocolForward')?.addEventListener('click',()=>$('protocolForwardDialog').close());
     $('protocolProgressForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('pa_id').value,x=licitacoes.find(v=>String(v.id)===String(id));if(!x||!isMyProtocol(x))return alert('Somente o responsável designado pode atualizar esta demanda.');const sit=$('pa_situacao').value,andamento=$('pa_andamento').value.trim(),proxima=$('pa_proxima').value.trim(),imp=$('pa_impedimento').value.trim(),agora=new Date().toISOString();if(!andamento)return alert('Informe o andamento ou providência realizada.');const reg=await client.rpc('registrar_andamento_licitacao',{p_licitacao_id:id,p_situacao:sit,p_andamento:andamento,p_proxima_providencia:proxima||null,p_impedimento:imp||null});if(reg.error)return alert('Não foi possível registrar o andamento: '+reg.error.message);$('protocolProgressDialog').close();$('protocolProgressForm').reset();await loadLicitacoes();});
-    $('protocolForwardForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('pf_id').value,x=licitacoes.find(v=>String(v.id)===String(id));if(!x||!isMyProtocol(x))return alert('Somente o responsável designado pode encaminhar esta demanda.');const resp=$('pf_responsavel').value,data=$('pf_data').value,obs=$('pf_obs').value.trim(),agora=new Date().toISOString();if(!resp||!data)return alert('Informe o responsável e a data da licitação.');const u=await client.from('licitacoes').update({situacao_execucao:'Encaminhada à Licitação',encaminhado_licitacao_em:agora,responsavel_licitacao:resp,data_sessao:data}).eq('id',id);if(u.error)return alert('Não foi possível encaminhar: '+u.error.message);const texto='Fase administrativa concluída. Encaminhada para '+resp+' com sessão em '+brDate(data)+(obs?' — '+obs:'');const hist=await client.from('licitacoes_andamentos').insert({licitacao_id:id,situacao:'Encaminhada à Licitação',andamento:texto,criado_por:profile.id});if(hist.error)return alert('Encaminhada, mas não foi possível registrar o histórico: '+hist.error.message);$('protocolForwardDialog').close();$('protocolForwardForm').reset();await loadLicitacoes();});
+    $('protocolForwardForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('pf_id').value,x=licitacoes.find(v=>String(v.id)===String(id));if(!x||!isMyProtocol(x))return alert('Somente o responsável designado pode encaminhar esta demanda.');const resp=$('pf_responsavel').value,data=$('pf_data').value,obs=$('pf_obs').value.trim(),agora=new Date().toISOString();if(!resp||!data)return alert('Informe o responsável e a data da licitação.');const u=await client.rpc('encaminhar_demanda_licitacao',{p_licitacao_id:id,p_responsavel_licitacao:resp,p_data_sessao:data,p_observacao:obs||null});if(u.error)return alert('Não foi possível encaminhar: '+u.error.message);$('protocolForwardDialog').close();$('protocolForwardForm').reset();await loadLicitacoes();});
+    $('navEtapaLicitacao')?.addEventListener('click',async()=>{if(!profile.modulo_licitacoes)return alert('Usuário sem acesso à Licitação.');await loadLicitacoes();showModule('etapaLicitacao');renderEtapaLicitacao();});
+    $('etapaLicitacaoSearch')?.addEventListener('input',renderEtapaLicitacao);$('etapaLicitacaoStatus')?.addEventListener('change',renderEtapaLicitacao);
+    $('closeEtapaLicitacaoProgress')?.addEventListener('click',()=>$('etapaLicitacaoProgressDialog').close());$('cancelEtapaLicitacaoProgress')?.addEventListener('click',()=>$('etapaLicitacaoProgressDialog').close());
+    $('etapaLicitacaoTbody')?.addEventListener('click',e=>{const h=e.target.closest('[data-lic-history]'),p=e.target.closest('[data-lic-progress]');if(h)return openProtocolHistory(h.dataset.licHistory);if(p){const x=licitacoes.find(v=>String(v.id)===String(p.dataset.licProgress));$('el_id').value=p.dataset.licProgress;$('el_situacao').value=['Encaminhada à Licitação','Concluída'].includes(x?.situacao_execucao)?'Preparando publicação':(x?.situacao_execucao||'Preparando publicação');$('el_data_sessao').value=String(x?.data_sessao||'').slice(0,10);$('el_andamento').value='';$('el_proxima').value=x?.proxima_providencia||'';$('etapaLicitacaoProgressDialog').showModal();}});
+    $('etapaLicitacaoProgressForm')?.addEventListener('submit',async e=>{e.preventDefault();const id=$('el_id').value,sit=$('el_situacao').value,andamento=$('el_andamento').value.trim(),prox=$('el_proxima').value.trim(),data=$('el_data_sessao').value||null;if(!andamento)return alert('Informe o andamento da Licitação.');const r=await client.rpc('registrar_andamento_etapa_licitacao',{p_licitacao_id:id,p_situacao:sit,p_andamento:andamento,p_proxima_providencia:prox||null,p_data_sessao:data});if(r.error)return alert('Não foi possível atualizar a Licitação: '+r.error.message);$('etapaLicitacaoProgressDialog').close();$('etapaLicitacaoProgressForm').reset();await loadLicitacoes();renderEtapaLicitacao();});
     $('protocolDistributeForm')?.addEventListener('submit',async e=>{
       e.preventDefault();
       if(!protocolCanEdit()) return alert('Seu acesso ao Protocolo é somente para visualização.');
