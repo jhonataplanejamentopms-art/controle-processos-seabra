@@ -172,7 +172,7 @@
     <div class="dialog-head"><div><small class="eyebrow">Licitações - Protocolo</small><h3>Nova demanda</h3></div><button type="button" id="closeProtocolNew" class="icon">×</button></div>
     <div class="form-grid">
       <label>Tipo de demanda<select id="p_tipo" required><option value="">Selecione</option><option>Processo Licitatório</option><option>Reequilíbrio</option><option>Aditivo</option><option>Apostilamento</option><option>Impugnação / Esclarecimento</option><option value="__novo__">+ Criar novo tipo de demanda</option></select></label>
-      <label id="p_novo_tipo_wrap" class="hidden">Novo tipo de demanda<input id="p_novo_tipo" placeholder="Digite o novo tipo"></label><label>Secretaria / Órgão<input id="p_secretaria"></label>
+      <label id="p_novo_tipo_wrap" class="hidden">Novo tipo de demanda<input id="p_novo_tipo" placeholder="Digite o novo tipo"></label><label>Secretaria / Órgão<select id="p_secretaria" required><option value="">Selecione</option><option>Administração</option><option>Agricultura</option><option>Assistência Social</option><option>Cultura</option><option>Desenvolvimento Econômico</option><option>Educação</option><option>Esporte e Lazer</option><option>Finanças</option><option>Infraestrutura</option><option>Meio Ambiente</option><option>Planejamento</option><option>Saúde</option><option>Transporte</option><option>Turismo</option><option value="__outro__">Outro órgão / secretaria</option></select></label><label id="p_outra_secretaria_wrap" class="hidden">Outro órgão / secretaria<input id="p_outra_secretaria" placeholder="Informe o nome"></label>
       <label class="span-2">Demanda / Assunto<input id="p_assunto" required></label>
       <label>Referência<input id="p_referencia" placeholder="Contrato, ata, processo, pregão..."></label>
       <label>Solicitante<input id="p_solicitante"></label>
@@ -227,6 +227,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=01102617"></script>
+  <script src="app.js?v=01102619"></script>
 </body>
 </html>
