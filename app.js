@@ -202,14 +202,24 @@
       if(!$('geralKpis'))return;
       const plan=items.filter(x=>!x.arquivado&&!x.data_envio_licitacao),prot=licitacoes.filter(x=>!x.arquivado&&!x.encaminhado_licitacao_em),lic=licitacoes.filter(x=>!x.arquivado&&x.encaminhado_licitacao_em),enc=licitacoes.filter(x=>x.arquivado).length+items.filter(x=>x.arquivado).length;
       const hoje=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-      const venc=prot.filter(x=>x.data_limite_execucao&&String(x.data_limite_execucao).slice(0,10)<hoje&&x.situacao_execucao!=='Concluída').length;
-      const imped=[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim()).length;
-      $('geralKpis').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Vencidas',venc],['Impedimentos',imped],['Encerradas/Homologadas',enc]].map(([n,v])=>`<div class="kpi"><small>${n}</small><b>${v}</b></div>`).join('');
-      $('geralFases').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Arquivo',enc]].map(([n,v])=>`<div class="dashboard-line"><span>${n}</span><strong>${v}</strong></div>`).join('');
-      const attention=[...prot.filter(x=>x.data_limite_execucao&&String(x.data_limite_execucao).slice(0,10)<hoje&&x.situacao_execucao!=='Concluída').map(x=>({n:x.objeto,r:'Prazo vencido · '+brDate(x.data_limite_execucao)})),...[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim()).map(x=>({n:x.objeto,r:'Impedimento: '+x.impedimento_execucao}))].slice(0,8);
+      const protVenc=prot.filter(x=>x.data_limite_execucao&&String(x.data_limite_execucao).slice(0,10)<hoje&&x.situacao_execucao!=='Concluída');
+      const licVenc=lic.filter(x=>{const d=String(x.data_sessao||'').slice(0,10);return licitacaoNeedsSession(x)&&d&&d<hoje&&!['Sessão realizada','Em julgamento/habilitação','Homologado','Fracassado','Deserto','Revogado','Anulado'].includes(x.situacao_execucao);});
+      const venc=protVenc.length+licVenc.length, imped=[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim()).length;
+      $('geralKpis').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Prazos críticos',venc],['Impedimentos',imped],['Encerradas/Homologadas',enc]].map(([n,v])=>`<div class="kpi"><small>${n}</small><b>${v}</b></div>`).join('');
+      $('geralFases').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Arquivo',enc]].map(([n,v])=>`<button type="button" class="dashboard-line dashboard-link" data-dashboard-module="${n==='Arquivo'?'encerrados':n==='Licitação'?'etapaLicitacao':n==='Protocolo'?'licitacoes':'planejamento'}"><span>${n}</span><strong>${v}</strong></button>`).join('');
+      const attention=[
+        ...protVenc.map(x=>({n:x.objeto,r:'Protocolo · prazo vencido em '+brDate(x.data_limite_execucao),p:0})),
+        ...licVenc.map(x=>({n:x.objeto,r:'Licitação · sessão vencida em '+brDate(x.data_sessao),p:0})),
+        ...[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim()).map(x=>({n:x.objeto,r:'Impedimento: '+x.impedimento_execucao,p:1})),
+        ...prot.filter(x=>protocolStatus(x)==='Aguardando recebimento'||protocolStatus(x)==='Aguardando distribuição').map(x=>({n:x.objeto,r:'Protocolo · '+protocolStatus(x).toLowerCase(),p:2}))
+      ].sort((a,b)=>a.p-b.p).slice(0,10);
       $('geralAtencao').innerHTML=attention.length?attention.map(x=>`<div class="dashboard-line alert-line"><span><strong>${esc(x.n||'Demanda')}</strong><small>${esc(x.r)}</small></span></div>`).join(''):'<div class="history-empty">Nenhuma pendência crítica no momento.</div>';
-      const recent=[...licitacoes.filter(x=>!x.arquivado).map(x=>({n:x.objeto,d:x.atualizado_em||x.distribuido_em||x.encaminhado_em,f:x.encaminhado_licitacao_em?'Licitação':'Protocolo'})),...items.filter(x=>!x.arquivado&&!x.data_envio_licitacao).map(x=>({n:x.demanda,d:x.atualizado_em||x.data_inicio_planejamento,f:'Planejamento'}))].filter(x=>x.d).sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0,8);
-      $('geralRecentes').innerHTML=recent.length?recent.map(x=>`<div class="dashboard-line"><span><strong>${esc(x.n||'Demanda')}</strong><small>${esc(x.f)}</small></span><span>${x.d?new Date(x.d).toLocaleDateString('pt-BR'):'—'}</span></div>`).join(''):'<div class="history-empty">Sem movimentações recentes.</div>';
+      const recent=[
+        ...licitacoes.filter(x=>!x.arquivado).map(x=>({n:x.objeto,d:x.atualizado_em||x.distribuido_em||x.encaminhado_em,f:x.encaminhado_licitacao_em?'Licitação':'Protocolo',s:x.situacao_execucao||protocolStatus(x)})),
+        ...items.filter(x=>!x.arquivado&&!x.data_envio_licitacao).map(x=>({n:x.demanda,d:x.atualizado_em||x.data_inicio_planejamento,f:'Planejamento',s:x.situacao_geral||'Planejamento'}))
+      ].filter(x=>x.d).sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0,10);
+      $('geralRecentes').innerHTML=recent.length?recent.map(x=>`<div class="dashboard-line"><span><strong>${esc(x.n||'Demanda')}</strong><small>${esc(x.f)} · ${esc(x.s||'')}</small></span><span>${x.d?new Date(x.d).toLocaleDateString('pt-BR'):'—'}</span></div>`).join(''):'<div class="history-empty">Sem movimentações recentes.</div>';
+      document.querySelectorAll('[data-dashboard-module]').forEach(b=>b.onclick=()=>showModule(b.dataset.dashboardModule));
     }
 
     function protocolStatus(x){
