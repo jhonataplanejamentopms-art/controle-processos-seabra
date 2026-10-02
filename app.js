@@ -188,15 +188,29 @@
       if(!profile.ativo) throw new Error('Cadastro aguardando aprovação ou usuário desativado.');
       $('userBadge').textContent=`${profile.nome||user.email} · ${profile.perfil}`;
     }
-    async function loadItems(){ if(!profile.modulo_planejamento){items=[];return;} const {data,error}=await client.from('planejamentos').select('*').order('numero',{ascending:true}); if(error) throw error; items=data||[]; refreshDynamicOptions(); render(); }
+    async function loadItems(){ if(!profile.modulo_planejamento){items=[];return;} const {data,error}=await client.from('planejamentos').select('*').order('numero',{ascending:true}); if(error) throw error; items=data||[]; refreshDynamicOptions(); render(); renderGeral(); }
 
 
     function showModule(module){
-      ['Licitacoes','Planejamento','Compras','EtapaLicitacao','Encerrados'].forEach(n=>$(`modulo${n}`)?.classList.add('hidden'));
+      ['Painel','Licitacoes','Planejamento','Compras','EtapaLicitacao','Encerrados'].forEach(n=>$(`modulo${n}`)?.classList.add('hidden'));
       $(`modulo${module.charAt(0).toUpperCase()+module.slice(1)}`)?.classList.remove('hidden');
       document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.module===module));
     }
 
+
+    function renderGeral(){
+      if(!$('geralKpis'))return;
+      const plan=items.filter(x=>!x.arquivado&&!x.data_envio_licitacao),prot=licitacoes.filter(x=>!x.arquivado&&!x.encaminhado_licitacao_em),lic=licitacoes.filter(x=>!x.arquivado&&x.encaminhado_licitacao_em),enc=licitacoes.filter(x=>x.arquivado).length+items.filter(x=>x.arquivado).length;
+      const hoje=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+      const venc=prot.filter(x=>x.data_limite_execucao&&String(x.data_limite_execucao).slice(0,10)<hoje&&x.situacao_execucao!=='Concluída').length;
+      const imped=[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim()).length;
+      $('geralKpis').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Vencidas',venc],['Impedimentos',imped],['Encerradas/Homologadas',enc]].map(([n,v])=>`<div class="kpi"><small>${n}</small><b>${v}</b></div>`).join('');
+      $('geralFases').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Arquivo',enc]].map(([n,v])=>`<div class="dashboard-line"><span>${n}</span><strong>${v}</strong></div>`).join('');
+      const attention=[...prot.filter(x=>x.data_limite_execucao&&String(x.data_limite_execucao).slice(0,10)<hoje&&x.situacao_execucao!=='Concluída').map(x=>({n:x.objeto,r:'Prazo vencido · '+brDate(x.data_limite_execucao)})),...[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim()).map(x=>({n:x.objeto,r:'Impedimento: '+x.impedimento_execucao}))].slice(0,8);
+      $('geralAtencao').innerHTML=attention.length?attention.map(x=>`<div class="dashboard-line alert-line"><span><strong>${esc(x.n||'Demanda')}</strong><small>${esc(x.r)}</small></span></div>`).join(''):'<div class="history-empty">Nenhuma pendência crítica no momento.</div>';
+      const recent=[...licitacoes.filter(x=>!x.arquivado).map(x=>({n:x.objeto,d:x.atualizado_em||x.distribuido_em||x.encaminhado_em,f:x.encaminhado_licitacao_em?'Licitação':'Protocolo'})),...items.filter(x=>!x.arquivado&&!x.data_envio_licitacao).map(x=>({n:x.demanda,d:x.atualizado_em||x.data_inicio_planejamento,f:'Planejamento'}))].filter(x=>x.d).sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0,8);
+      $('geralRecentes').innerHTML=recent.length?recent.map(x=>`<div class="dashboard-line"><span><strong>${esc(x.n||'Demanda')}</strong><small>${esc(x.f)}</small></span><span>${x.d?new Date(x.d).toLocaleDateString('pt-BR'):'—'}</span></div>`).join(''):'<div class="history-empty">Sem movimentações recentes.</div>';
+    }
 
     function protocolStatus(x){
       if(x.status_recebimento==='Cancelado'||x.situacao==='Cancelado') return 'Cancelado';
@@ -372,7 +386,7 @@
       // durante a implantação foi removido para não ocultar processos encaminhados
       // com data anterior ao início de operação do módulo.
       licitacoes=(data||[]);
-      renderLicitacoes(); renderEtapaLicitacao(); renderEncerrados();
+      renderLicitacoes(); renderEtapaLicitacao(); renderEncerrados(); renderGeral();
     }
     async function receiveLicitacao(id){
       if(!protocolCanEdit()||!profile.pode_receber_licitacao)return alert('Você não possui permissão para receber demandas.');
