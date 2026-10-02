@@ -309,15 +309,27 @@
       $('protocolHistorySummary').innerHTML=`<div class="detail-grid">${detailField('Tipo',esc(x.tipo_demanda||'Processo Licitatório'))}${detailField('Modalidade',esc(x.modalidade||'—'))}${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Responsável',esc(x.responsavel||'—'))}${detailField('Situação atual',esc(x.situacao_execucao||protocolStatus(x)))}${detailField('Próxima providência',esc(x.proxima_providencia||'—'),'span-3')}</div>`;
       $('protocolHistoryContent').innerHTML='<div class="history-empty">Carregando histórico...</div>';
       $('masterDemandId').value=id; $('protocolMasterActions')?.classList.toggle('hidden',!isMaster()); $('protocolHistoryDialog').showModal();
-      const {data,error}=await client.from('licitacoes_andamentos').select('id,situacao,andamento,proxima_providencia,impedimento,criado_por,criado_em').eq('licitacao_id',id).order('criado_em',{ascending:false});
-      if(error){$('protocolHistoryContent').innerHTML=`<div class="history-empty">${esc(error.message)}</div>`;return;}
-      const rows=data||[], hasReceiptEvent=rows.some(r=>r.situacao==='Recebida'), hasDistributionEvent=rows.some(r=>r.situacao==='Distribuída');
-      const inicio=`<div class="history-item"><div class="history-meta"><strong>Entrada no Protocolo</strong><span>${protocolDateTime(x.encaminhado_em||x.criado_em)}</span></div><div class="history-changes">Demanda registrada${x.origem?' via '+esc(x.origem):''}.</div></div>`;
-      const receb=x.recebido_em&&!hasReceiptEvent?`<div class="history-item"><div class="history-meta"><strong>Recebimento</strong><span>${protocolDateTime(x.recebido_em)}</span></div><div class="history-changes">Demanda recebida no Protocolo.</div></div>`:'';
-      const dist=x.distribuido_em&&!hasDistributionEvent?`<div class="history-item"><div class="history-meta"><strong>Distribuição</strong><span>${protocolDateTime(x.distribuido_em)}</span></div><div class="history-changes">Distribuída para <strong>${esc(x.responsavel||'—')}</strong>${x.data_limite_execucao?' · prazo até '+brDate(x.data_limite_execucao):''}${x.observacao_distribuicao?'<br>'+esc(x.observacao_distribuicao):''}</div></div>`:'';
-      const ands=rows.map(r=>`<div class="history-item"><div class="history-meta"><strong>${esc(r.situacao||'Andamento')}</strong><span>${protocolDateTime(r.criado_em)}</span></div><div class="history-changes"><strong>Andamento:</strong> ${esc(r.andamento||'—')}${r.proxima_providencia?'<br><strong>Próxima providência:</strong> '+esc(r.proxima_providencia):''}${r.impedimento?'<br><strong>Impedimento/observação:</strong> '+esc(r.impedimento):''}</div></div>`).join('');
-      $('protocolHistoryContent').innerHTML=ands+dist+receb+inicio;
+      const [andRes,docRes]=await Promise.all([
+        client.from('licitacoes_andamentos').select('id,situacao,andamento,proxima_providencia,impedimento,criado_por,criado_em').eq('licitacao_id',id).order('criado_em',{ascending:false}),
+        x.planejamento_id?client.from('documentos_demandas').select('id,nome_original,fase_inclusao,criado_em').or(`planejamento_id.eq.${x.planejamento_id},licitacao_id.eq.${id}`).order('criado_em',{ascending:false}):client.from('documentos_demandas').select('id,nome_original,fase_inclusao,criado_em').eq('licitacao_id',id).order('criado_em',{ascending:false})
+      ]);
+      if(andRes.error){$('protocolHistoryContent').innerHTML=`<div class="history-empty">${esc(andRes.error.message)}</div>`;return;}
+      const rows=andRes.data||[], events=[];
+      const add=(date,title,detail,phase)=>{if(date)events.push({date,title,detail,phase});};
+      add(x.encaminhado_em||x.criado_em,'Entrada no Protocolo',`Demanda registrada${x.origem?' via '+esc(x.origem):''}.`,'Protocolo');
+      if(x.recebido_em&&!rows.some(r=>r.situacao==='Recebida')) add(x.recebido_em,'Recebimento','Demanda recebida no Protocolo.','Protocolo');
+      if(x.distribuido_em&&!rows.some(r=>r.situacao==='Distribuída')) add(x.distribuido_em,'Distribuição',`Distribuída para <strong>${esc(x.responsavel||'—')}</strong>${x.data_limite_execucao?' · prazo até '+brDate(x.data_limite_execucao):''}${x.observacao_distribuicao?'<br>'+esc(x.observacao_distribuicao):''}`,'Protocolo');
+      rows.forEach(r=>add(r.criado_em,r.situacao||'Andamento',`<strong>Andamento:</strong> ${esc(r.andamento||'—')}${r.proxima_providencia?'<br><strong>Próxima providência:</strong> '+esc(r.proxima_providencia):''}${r.impedimento?'<br><strong>Impedimento/observação:</strong> '+esc(r.impedimento):''}`,String(r.situacao||'').includes('Licitação')||x.encaminhado_licitacao_em&&new Date(r.criado_em)>=new Date(x.encaminhado_licitacao_em)?'Licitação':'Protocolo'));
+      if(x.encaminhado_licitacao_em) add(x.encaminhado_licitacao_em,'Encaminhamento à Licitação',`Responsável: <strong>${esc(x.responsavel_licitacao||'—')}</strong>${x.data_sessao?'<br>Data prevista/sessão: '+brDate(x.data_sessao):''}`,'Licitação');
+      if(x.data_publicacao) add(x.data_publicacao,'Publicação','Data de publicação registrada.','Licitação');
+      if(x.data_sessao&&['Sessão realizada','Em julgamento/habilitação','Homologado','Fracassado','Deserto'].includes(x.situacao_execucao)) add(x.data_sessao,'Sessão','Sessão do processo registrada.','Licitação');
+      if(x.data_homologacao) add(x.data_homologacao,'Homologação',`Homologação registrada${x.valor_homologado!=null?' · valor '+money(x.valor_homologado):''}.`,'Licitação');
+      if(x.arquivado_em) add(x.arquivado_em,x.resultado_arquivamento||'Arquivamento',x.justificativa_encerramento?esc(x.justificativa_encerramento):'Demanda arquivada.','Arquivo');
+      if(!docRes.error)(docRes.data||[]).forEach(d=>add(d.criado_em,'Documento incluído',`<strong>${esc(d.nome_original||'Documento')}</strong>`,'Documento · '+(d.fase_inclusao||'—')));
+      events.sort((a,b)=>new Date(b.date)-new Date(a.date));
+      $('protocolHistoryContent').innerHTML=events.length?events.map(ev=>`<div class="history-item"><div class="history-meta"><strong>${esc(ev.title)} <span class="history-phase">· ${esc(ev.phase)}</span></strong><span>${protocolDateTime(ev.date)}</span></div><div class="history-changes">${ev.detail}</div></div>`).join(''):'<div class="history-empty">Nenhum histórico encontrado.</div>';
     }
+
     function openMasterDemand(id){
       if(!isMaster()) return;
       const x=licitacoes.find(v=>String(v.id)===String(id)); if(!x)return;
