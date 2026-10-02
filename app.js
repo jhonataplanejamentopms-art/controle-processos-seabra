@@ -598,6 +598,7 @@
       else { $('protocolDistributeDialog').close(); await loadLicitacoes(); }
       if(btn){btn.disabled=false;btn.textContent='Distribuir';}
     });
+    $('navPainel')?.addEventListener('click',async()=>{await refreshAll();showModule('painel');renderGeral();});
     $('navEncerrados')?.addEventListener('click',async()=>{await refreshAll();showModule('encerrados');renderEncerrados();});
     $('encerradosSearch')?.addEventListener('input',renderEncerrados);$('encerradosResultado')?.addEventListener('change',renderEncerrados);
     $('encerradosTbody')?.addEventListener('click',e=>{const o=e.target.closest('[data-arch-open]'),r=e.target.closest('[data-arch-return]');if(o){const [k,id]=o.dataset.archOpen.split(':');if(k==='planejamento')openDetail(id);else openProtocolHistory(id);}if(r){const [k,id]=r.dataset.archReturn.split(':');returnArchived(k,id);}});
