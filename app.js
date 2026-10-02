@@ -200,6 +200,36 @@
     async function loadItems(){ if(!profile.modulo_planejamento){items=[];return;} const {data,error}=await client.from('planejamentos').select('*').order('numero',{ascending:true}); if(error) throw error; items=data||[]; refreshDynamicOptions(); render(); renderGeral(); }
 
 
+    function processCode(x,phase=''){
+      const raw=String(x?.numero_processo||x?.numero_licitacao||x?.numero||'').trim();
+      if(raw) return raw;
+      const id=String(x?.id||'').replace(/-/g,'').slice(0,8).toUpperCase();
+      const p=phase==='Planejamento'?'PLN':phase==='Licitação'?'LIC':'PRO';
+      return p+'-'+id;
+    }
+    function phaseTracker(phase,archived=false){
+      const steps=['Planejamento','Protocolo','Licitação','Resultado'];
+      let idx=phase==='Planejamento'?0:phase==='Protocolo'?1:phase==='Licitação'?2:3;
+      if(archived)idx=3;
+      return '<div class="phase-tracker">'+steps.map((s,i)=>'<div class="phase-step '+(i<idx?'done':i===idx?'current':'')+'"><span>'+(i<idx?'✓':i+1)+'</span><small>'+s+'</small></div>').join('')+'</div>';
+    }
+    function openGlobalResult(kind,id){
+      $('globalSearchResults')?.classList.add('hidden');
+      if(kind==='planning'){showModule('planejamento');openDetail(id);return;}
+      const x=licitacoes.find(v=>String(v.id)===String(id)); if(!x)return;
+      showModule(x.arquivado?'encerrados':x.encaminhado_licitacao_em?'etapaLicitacao':'licitacoes');
+      openProtocolHistory(id);
+    }
+    function renderGlobalSearch(){
+      const box=$('globalSearchResults'),q=String($('globalSearch')?.value||'').trim().toLowerCase(); if(!box)return;
+      if(q.length<2){box.classList.add('hidden');box.innerHTML='';return;}
+      const p=items.filter(x=>[x.demanda,x.secretaria,x.numero,x.modalidade_prevista,processCode(x,'Planejamento')].join(' ').toLowerCase().includes(q)).map(x=>({kind:'planning',id:x.id,name:x.demanda,phase:x.arquivado?'Arquivo':'Planejamento',code:processCode(x,'Planejamento'),status:x.situacao_geral||'Planejamento'}));
+      const l=licitacoes.filter(x=>[x.objeto,x.secretaria,x.numero_processo,x.numero_licitacao,x.modalidade,x.responsavel,x.responsavel_licitacao,processCode(x,x.encaminhado_licitacao_em?'Licitação':'Protocolo')].join(' ').toLowerCase().includes(q)).map(x=>({kind:'demand',id:x.id,name:x.objeto,phase:x.arquivado?'Arquivo':x.encaminhado_licitacao_em?'Licitação':'Protocolo',code:processCode(x,x.encaminhado_licitacao_em?'Licitação':'Protocolo'),status:x.situacao_execucao||protocolStatus(x)}));
+      const res=[...p,...l].slice(0,12);
+      box.innerHTML=res.length?res.map(x=>'<button type="button" class="global-result" data-global-kind="'+x.kind+'" data-global-id="'+esc(x.id)+'"><span><strong>'+esc(x.name||'Demanda')+'</strong><small>'+esc(x.code)+' · '+esc(x.phase)+'</small></span><span class="badge">'+esc(x.status)+'</span></button>').join(''):'<div class="global-empty">Nenhum processo encontrado.</div>';
+      box.classList.remove('hidden');
+    }
+
     function showModule(module){
       ['Painel','Licitacoes','Planejamento','Compras','EtapaLicitacao','Encerrados'].forEach(n=>$(`modulo${n}`)?.classList.add('hidden'));
       $(`modulo${module.charAt(0).toUpperCase()+module.slice(1)}`)?.classList.remove('hidden');
@@ -213,21 +243,23 @@
       const hoje=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
       const protVenc=prot.filter(x=>x.data_limite_execucao&&String(x.data_limite_execucao).slice(0,10)<hoje&&x.situacao_execucao!=='Concluída');
       const licVenc=lic.filter(x=>{const d=String(x.data_sessao||'').slice(0,10);return licitacaoNeedsSession(x)&&d&&d<hoje&&!['Sessão realizada','Em julgamento/habilitação','Homologado','Fracassado','Deserto','Revogado','Anulado'].includes(x.situacao_execucao);});
-      const venc=protVenc.length+licVenc.length, imped=[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim()).length;
-      $('geralKpis').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Prazos críticos',venc],['Impedimentos',imped],['Encerradas/Homologadas',enc]].map(([n,v])=>`<div class="kpi"><small>${n}</small><b>${v}</b></div>`).join('');
-      $('geralFases').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Arquivo',enc]].map(([n,v])=>`<button type="button" class="dashboard-line dashboard-link" data-dashboard-module="${n==='Arquivo'?'encerrados':n==='Licitação'?'etapaLicitacao':n==='Protocolo'?'licitacoes':'planejamento'}"><span>${n}</span><strong>${v}</strong></button>`).join('');
+      const protProx=prot.filter(x=>{const d=String(x.data_limite_execucao||'').slice(0,10);return d&&d>=hoje&&businessDaysDiff(dateOnly(hoje),dateOnly(d))<=3&&x.situacao_execucao!=='Concluída';});
+      const licProx=lic.filter(x=>{const d=String(x.data_sessao||'').slice(0,10);return licitacaoNeedsSession(x)&&d&&d>=hoje&&businessDaysDiff(dateOnly(hoje),dateOnly(d))<=3&&!['Homologado','Fracassado','Deserto','Revogado','Anulado'].includes(x.situacao_execucao);});
+      const imped=[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim());
+      const aguard=prot.filter(x=>['Aguardando recebimento','Aguardando distribuição'].includes(protocolStatus(x)));
+      $('geralKpis').innerHTML=[['Aguardando ação',aguard.length],['Prazos vencidos',protVenc.length+licVenc.length],['Próximos vencimentos',protProx.length+licProx.length],['Em execução',prot.filter(x=>['Em andamento','Aguardando terceiros'].includes(x.situacao_execucao)).length],['Sessões próximas',licProx.length],['Impedimentos',imped.length]].map(([n,v],i)=>'<div class="kpi '+(i===1?'danger':i===2||i===4?'warn':'')+'"><small>'+n+'</small><b>'+v+'</b></div>').join('');
+      $('geralFases').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Arquivo',enc]].map(([n,v])=>'<button type="button" class="dashboard-line dashboard-link" data-dashboard-module="'+(n==='Arquivo'?'encerrados':n==='Licitação'?'etapaLicitacao':n==='Protocolo'?'licitacoes':'planejamento')+'"><span>'+n+'</span><strong>'+v+'</strong></button>').join('');
       const attention=[
         ...protVenc.map(x=>({n:x.objeto,r:'Protocolo · prazo vencido em '+brDate(x.data_limite_execucao),p:0})),
         ...licVenc.map(x=>({n:x.objeto,r:'Licitação · sessão vencida em '+brDate(x.data_sessao),p:0})),
-        ...[...prot,...lic].filter(x=>String(x.impedimento_execucao||'').trim()).map(x=>({n:x.objeto,r:'Impedimento: '+x.impedimento_execucao,p:1})),
-        ...prot.filter(x=>protocolStatus(x)==='Aguardando recebimento'||protocolStatus(x)==='Aguardando distribuição').map(x=>({n:x.objeto,r:'Protocolo · '+protocolStatus(x).toLowerCase(),p:2}))
+        ...imped.map(x=>({n:x.objeto,r:'Impedimento: '+x.impedimento_execucao,p:1})),
+        ...protProx.map(x=>({n:x.objeto,r:'Protocolo · prazo próximo em '+brDate(x.data_limite_execucao),p:2})),
+        ...licProx.map(x=>({n:x.objeto,r:'Licitação · sessão próxima em '+brDate(x.data_sessao),p:2})),
+        ...aguard.map(x=>({n:x.objeto,r:'Protocolo · '+protocolStatus(x).toLowerCase(),p:3}))
       ].sort((a,b)=>a.p-b.p).slice(0,10);
-      $('geralAtencao').innerHTML=attention.length?attention.map(x=>`<div class="dashboard-line alert-line"><span><strong>${esc(x.n||'Demanda')}</strong><small>${esc(x.r)}</small></span></div>`).join(''):'<div class="history-empty">Nenhuma pendência crítica no momento.</div>';
-      const recent=[
-        ...licitacoes.filter(x=>!x.arquivado).map(x=>({n:x.objeto,d:x.atualizado_em||x.distribuido_em||x.encaminhado_em,f:x.encaminhado_licitacao_em?'Licitação':'Protocolo',s:x.situacao_execucao||protocolStatus(x)})),
-        ...items.filter(x=>!x.arquivado&&!x.data_envio_licitacao).map(x=>({n:x.demanda,d:x.atualizado_em||x.data_inicio_planejamento,f:'Planejamento',s:x.situacao_geral||'Planejamento'}))
-      ].filter(x=>x.d).sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0,10);
-      $('geralRecentes').innerHTML=recent.length?recent.map(x=>`<div class="dashboard-line"><span><strong>${esc(x.n||'Demanda')}</strong><small>${esc(x.f)} · ${esc(x.s||'')}</small></span><span>${x.d?new Date(x.d).toLocaleDateString('pt-BR'):'—'}</span></div>`).join(''):'<div class="history-empty">Sem movimentações recentes.</div>';
+      $('geralAtencao').innerHTML=attention.length?attention.map(x=>'<div class="dashboard-line alert-line"><span><strong>'+esc(x.n||'Demanda')+'</strong><small>'+esc(x.r)+'</small></span></div>').join(''):'<div class="history-empty">Nenhuma pendência crítica no momento.</div>';
+      const recent=[...licitacoes.filter(x=>!x.arquivado).map(x=>({n:x.objeto,d:x.atualizado_em||x.distribuido_em||x.encaminhado_em,f:x.encaminhado_licitacao_em?'Licitação':'Protocolo',s:x.situacao_execucao||protocolStatus(x),c:processCode(x,x.encaminhado_licitacao_em?'Licitação':'Protocolo')})),...items.filter(x=>!x.arquivado&&!x.data_envio_licitacao).map(x=>({n:x.demanda,d:x.atualizado_em||x.data_inicio_planejamento,f:'Planejamento',s:x.situacao_geral||'Planejamento',c:processCode(x,'Planejamento')}))].filter(x=>x.d).sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0,10);
+      $('geralRecentes').innerHTML=recent.length?recent.map(x=>'<div class="dashboard-line"><span><strong>'+esc(x.n||'Demanda')+'</strong><small>'+esc(x.c)+' · '+esc(x.f)+' · '+esc(x.s||'')+'</small></span><span>'+new Date(x.d).toLocaleDateString('pt-BR')+'</span></div>').join(''):'<div class="history-empty">Sem movimentações recentes.</div>';
       document.querySelectorAll('[data-dashboard-module]').forEach(b=>b.onclick=()=>showModule(b.dataset.dashboardModule));
     }
 
@@ -314,8 +346,8 @@
     }
     async function openProtocolHistory(id){
       const x=licitacoes.find(v=>String(v.id)===String(id)); if(!x)return;
-      $('protocolHistoryTitle').textContent=x.objeto||'Histórico da demanda'; documentsContext={planejamentoId:x.planejamento_id||null,licitacaoId:x.id,phase:x.encaminhado_licitacao_em?'Licitação':'Protocolo'};
-      $('protocolHistorySummary').innerHTML=`<div class="detail-grid">${detailField('Tipo',esc(x.tipo_demanda||'Processo Licitatório'))}${detailField('Modalidade',esc(x.modalidade||'—'))}${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Responsável',esc(x.responsavel||'—'))}${detailField('Situação atual',esc(x.situacao_execucao||protocolStatus(x)))}${detailField('Próxima providência',esc(x.proxima_providencia||'—'),'span-3')}</div>`;
+      $('protocolHistoryTitle').textContent=processCode(x,x.encaminhado_licitacao_em?'Licitação':'Protocolo')+' · '+(x.objeto||'Histórico da demanda'); documentsContext={planejamentoId:x.planejamento_id||null,licitacaoId:x.id,phase:x.encaminhado_licitacao_em?'Licitação':'Protocolo'};
+      $('protocolHistorySummary').innerHTML=phaseTracker(x.arquivado?'Resultado':x.encaminhado_licitacao_em?'Licitação':'Protocolo',Boolean(x.arquivado))+`<div class="detail-grid">${detailField('Tipo',esc(x.tipo_demanda||'Processo Licitatório'))}${detailField('Modalidade',esc(x.modalidade||'—'))}${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Responsável',esc(x.responsavel||'—'))}${detailField('Situação atual',esc(x.situacao_execucao||protocolStatus(x)))}${detailField('Próxima providência',esc(x.proxima_providencia||'—'),'span-3')}</div>`;
       $('protocolHistoryContent').innerHTML='<div class="history-empty">Carregando histórico...</div>';
       $('masterDemandId').value=id; $('protocolMasterActions')?.classList.toggle('hidden',!isMaster()); $('protocolHistoryDialog').showModal();
       const [andRes,docRes]=await Promise.all([
@@ -488,8 +520,8 @@
     }
     function openDetail(id){
       const x=items.find(v=>String(v.id)===String(id)); if(!x) return; currentDetailId=id; const d=deadlineInfo(x);
-      $('detailTitle').textContent=`${x.numero?`Nº ${x.numero} · `:''}${x.demanda}`;
-      $('detailContent').innerHTML=`<div class="detail-grid">
+      $('detailTitle').textContent=`${processCode(x,'Planejamento')} · ${x.demanda}`;
+      $('detailContent').innerHTML=phaseTracker('Planejamento',Boolean(x.arquivado))+`<div class="detail-grid">
         ${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Tipo',esc(x.tipo_objeto||'—'))}${detailField('Modalidade',esc(x.modalidade_prevista||'—'))}
         ${detailField('Situação das cotações',esc(x.situacao_cotacao||'—'))}${detailField('Situação geral',`<span class="badge">${esc(x.situacao_geral||'Sem status')}</span>`)}
         ${detailField('Início',brDate(x.data_inicio_planejamento))}${detailField('Data limite',`${brDate(x.data_limite_planejamento)}<br><span class="badge ${d.class}">${esc(d.label)}</span>`)}
@@ -619,6 +651,9 @@
       else { $('protocolDistributeDialog').close(); await loadLicitacoes(); }
       if(btn){btn.disabled=false;btn.textContent='Distribuir';}
     });
+    $('globalSearch')?.addEventListener('input',renderGlobalSearch);
+    $('globalSearchResults')?.addEventListener('click',e=>{const b=e.target.closest('[data-global-id]');if(b)openGlobalResult(b.dataset.globalKind,b.dataset.globalId);});
+    document.addEventListener('click',e=>{if(!e.target.closest('.global-search-wrap'))$('globalSearchResults')?.classList.add('hidden');});
     $('sidebarToggle')?.addEventListener('click',()=>{const next=!document.body.classList.contains('sidebar-collapsed');document.body.classList.toggle('sidebar-collapsed',next);localStorage.setItem('gp_sidebar_collapsed',next?'1':'0');applyUiPreferences();});
     $('themeToggle')?.addEventListener('click',()=>{const dark=!document.body.classList.contains('dark-mode');localStorage.setItem('gp_theme',dark?'dark':'light');applyUiPreferences();});
     applyUiPreferences();
