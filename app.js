@@ -14,6 +14,15 @@
     let planningScope = 'ongoing';
     let licitacoes = [];
 
+    function applyUiPreferences(){
+      const collapsed=localStorage.getItem('gp_sidebar_collapsed')==='1';
+      const dark=localStorage.getItem('gp_theme')==='dark';
+      document.body.classList.toggle('sidebar-collapsed',collapsed);
+      document.body.classList.toggle('dark-mode',dark);
+      const sb=$('sidebarToggle'); if(sb){sb.title=collapsed?'Expandir menu':'Recolher menu';sb.setAttribute('aria-label',sb.title);}
+      const ti=$('themeIcon'),tl=$('themeLabel'); if(ti)ti.textContent=dark?'☀':'☾'; if(tl)tl.textContent=dark?'Modo claro':'Modo escuro';
+    }
+
     const statuses = ['Planejamento','Cotando','Cotado','Aguard. Autorização','Enviado p/ Protocolo','Edital Publicado','Concluído','Suspenso','Cancelado'];
     const types = ['Bem','Serviço','Obra','Serviço de Engenharia'];
     statuses.forEach(s => $('statusFilter')?.insertAdjacentHTML('beforeend', `<option>${esc(s)}</option>`));
@@ -610,6 +619,9 @@
       else { $('protocolDistributeDialog').close(); await loadLicitacoes(); }
       if(btn){btn.disabled=false;btn.textContent='Distribuir';}
     });
+    $('sidebarToggle')?.addEventListener('click',()=>{const next=!document.body.classList.contains('sidebar-collapsed');document.body.classList.toggle('sidebar-collapsed',next);localStorage.setItem('gp_sidebar_collapsed',next?'1':'0');applyUiPreferences();});
+    $('themeToggle')?.addEventListener('click',()=>{const dark=!document.body.classList.contains('dark-mode');localStorage.setItem('gp_theme',dark?'dark':'light');applyUiPreferences();});
+    applyUiPreferences();
     $('navPainel')?.addEventListener('click',async()=>{await refreshAll();showModule('painel');renderGeral();});
     $('navEncerrados')?.addEventListener('click',async()=>{await refreshAll();showModule('encerrados');renderEncerrados();});
     $('encerradosSearch')?.addEventListener('input',renderEncerrados);$('encerradosResultado')?.addEventListener('change',renderEncerrados);
