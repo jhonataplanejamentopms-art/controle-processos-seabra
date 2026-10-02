@@ -322,18 +322,10 @@
       if(distError) throw distError;
       const distMap=new Map((dist||[]).map(x=>[String(x.id),x]));
       (data||[]).forEach(x=>Object.assign(x,distMap.get(String(x.id))||{}));
-      // Marco inicial do novo Protocolo (01/10/2026): o painel não carrega o histórico anterior.
-      // Durante a fase de testes, mantém somente duas demandas legadas:
-      // 1 aguardando recebimento e 1 aguardando distribuição.
-      const base=(data||[]);
-      // Marco inicial do Protocolo: preserva Caixa de Som para teste e passa a exibir
-      // toda demanda efetivamente encaminhada pelo Planejamento a partir de 01/10/2026.
-      const caixa=base.find(x=>String(x.objeto||'').toLowerCase().includes('caixa de som'));
-      const novas=base.filter(x=>{
-        const enviado=String(x.encaminhado_em||x.criado_em||'').slice(0,10);
-        return (x.origem==='Protocolo'||enviado>='2026-10-01') && x.id!==caixa?.id;
-      });
-      licitacoes=[...(caixa?[caixa]:[]),...novas];
+      // Exibe todas as demandas existentes no Protocolo. O filtro temporário usado
+      // durante a implantação foi removido para não ocultar processos encaminhados
+      // com data anterior ao início de operação do módulo.
+      licitacoes=(data||[]);
       renderLicitacoes(); renderEtapaLicitacao();
     }
     async function receiveLicitacao(id){
