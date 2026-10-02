@@ -1,0 +1,17 @@
+{
+  "name": "gestao-processos-seabra",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "ios:sync": "npx cap sync ios",
+    "ios:open": "npx cap open ios",
+    "ios:run": "npx cap run ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}
