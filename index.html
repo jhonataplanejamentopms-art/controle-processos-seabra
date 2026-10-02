@@ -45,6 +45,7 @@
       <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Protocolo</button>
       <button type="button" id="navCompras" class="nav-btn hidden" data-module="compras">Compras</button>
       <button type="button" id="navEtapaLicitacao" class="nav-btn" data-module="etapaLicitacao">Licitação <span id="etapaLicitacaoCount"></span></button>
+      <button type="button" id="navEncerrados" class="nav-btn" data-module="encerrados">Encerrado/Homologado <span id="encerradosCount"></span></button>
       <span class="nav-spacer"></span>
       <button type="button" id="navMinhasDemandas" class="nav-btn nav-my">Minhas demandas <span id="protocolMineCount"></span></button>
     </nav>
@@ -73,6 +74,13 @@
         <section class="filters"><input id="etapaLicitacaoSearch" type="search" placeholder="Buscar processo, secretaria, modalidade ou responsável"><select id="etapaLicitacaoScope"><option value="ongoing">Em andamento</option><option value="finished">Finalizados</option><option value="all">Todos</option></select><select id="etapaLicitacaoStatus"><option value="">Todas as situações</option><option>Encaminhada à Licitação</option><option>Preparando publicação</option><option>Publicado</option><option>Sessão realizada</option><option>Em julgamento/habilitação</option><option>Homologado</option><option>Fracassado</option><option>Deserto</option><option>Revogado</option><option>Anulado</option></select></section>
         <section class="result-summary"><span id="etapaLicitacaoResultCount">0 processos</span><span>Encaminhamento → publicação → sessão → resultado.</span></section>
         <section class="table-card"><div class="table-wrap"><table><thead><tr><th>Demanda</th><th>Modalidade</th><th>Secretaria</th><th>Responsável</th><th>Sessão</th><th>Situação</th><th>Ação</th></tr></thead><tbody id="etapaLicitacaoTbody"></tbody></table></div><div id="etapaLicitacaoEmpty" class="empty hidden">Nenhum processo encaminhado para Licitação.</div></section>
+      </section>
+
+      <section id="moduloEncerrados" class="module-view hidden">
+        <section class="hero-row"><div><h2>Encerrado/Homologado</h2><p>Arquivo das demandas encerradas e dos processos homologados ou fracassados.</p></div></section>
+        <section class="filters"><input id="encerradosSearch" type="search" placeholder="Buscar demanda ou secretaria"><select id="encerradosResultado"><option value="">Todos os resultados</option><option>Encerrado</option><option>Homologado</option><option>Fracassado</option></select></section>
+        <section class="result-summary"><span id="encerradosResultCount">0 registros</span><span>Histórico e documentos preservados.</span></section>
+        <section class="table-card"><div class="table-wrap"><table><thead><tr><th>Demanda</th><th>Secretaria</th><th>Origem</th><th>Resultado</th><th>Data</th><th>Justificativa / Homologação</th><th>Ação</th></tr></thead><tbody id="encerradosTbody"></tbody></table></div><div id="encerradosEmpty" class="empty hidden">Nenhuma demanda arquivada.</div></section>
       </section>
 
       <section id="moduloPlanejamento" class="module-view">
@@ -174,7 +182,7 @@
   <dialog id="detailDialog" class="detail-dialog"><div class="dialog-card detail-shell">
     <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3 id="detailTitle">Detalhes da demanda</h3></div><button type="button" id="closeDetail" class="icon">×</button></div>
     <div id="detailContent"></div>
-    <div class="dialog-actions"><button type="button" id="planningDocumentsBtn" class="ghost">📎 Documentos</button><button type="button" id="historyBtn" class="ghost">Histórico</button><button type="button" id="detailDeleteBtn" class="danger-btn admin-only hidden">Excluir totalmente</button><button type="button" id="detailEditBtn" class="primary editor-only">Editar</button></div>
+    <div class="dialog-actions"><button type="button" id="planningDocumentsBtn" class="ghost">📎 Documentos</button><button type="button" id="historyBtn" class="ghost">Histórico</button><button type="button" id="planningArchiveBtn" class="ghost editor-only">Encerrar</button><button type="button" id="detailDeleteBtn" class="danger-btn admin-only hidden">Excluir totalmente</button><button type="button" id="detailEditBtn" class="primary editor-only">Editar</button></div>
   </div></dialog>
   <dialog id="historyDialog" class="history-dialog"><div class="dialog-card detail-shell">
     <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3>Histórico da demanda</h3></div><button type="button" id="closeHistory" class="icon">×</button></div>
@@ -232,7 +240,7 @@
   <dialog id="protocolHistoryDialog" class="detail-dialog"><div class="dialog-card">
     <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3 id="protocolHistoryTitle">Histórico da demanda</h3></div><button type="button" id="closeProtocolHistory" class="icon">×</button></div>
     <div id="protocolHistorySummary"></div>
-    <div id="protocolHistoryContent" style="margin-top:14px"></div><div class="dialog-actions" style="margin-top:14px"><button type="button" id="protocolDocumentsBtn" class="ghost">📎 Documentos</button></div>
+    <div id="protocolHistoryContent" style="margin-top:14px"></div><div class="dialog-actions" style="margin-top:14px"><button type="button" id="protocolDocumentsBtn" class="ghost">📎 Documentos</button><button type="button" id="protocolArchiveBtn" class="ghost">Encerrar</button></div>
     <div id="protocolMasterActions" class="dialog-actions hidden" style="margin-top:14px"><button type="button" id="masterManageDemand" class="ghost">Excluir / Retornar</button></div>
   </div></dialog>
   <dialog id="documentsDialog" class="detail-dialog"><div class="dialog-card detail-shell">
@@ -242,6 +250,7 @@
     <div id="documentsList" class="documents-list"></div>
   </div></dialog>
   <dialog id="masterDemandDialog" class="detail-dialog"><div class="dialog-card"><div class="dialog-head"><div><small class="eyebrow">Administração da demanda</small><h3>Excluir ou retornar demanda</h3></div><button type="button" id="closeMasterDemand" class="icon">×</button></div><input type="hidden" id="masterDemandId"><p>O que deseja fazer com esta demanda?</p><div class="form-grid"><button type="button" id="masterReturnDemand" class="ghost span-2"><strong>Retornar para a fase anterior</strong><br><small>Mantém a demanda e todo o histórico.</small></button><button type="button" id="masterDeleteDemand" class="ghost span-2"><strong>Excluir totalmente</strong><br><small>Exclui definitivamente a demanda e os registros relacionados.</small></button></div><div class="dialog-actions"><button type="button" id="cancelMasterDemand" class="ghost">Cancelar</button></div></div></dialog>
+  <dialog id="archiveDialog" class="detail-dialog"><form id="archiveForm" class="dialog-card"><div class="dialog-head"><div><small class="eyebrow">Encerramento</small><h3 id="archiveTitle">Encerrar demanda</h3></div><button type="button" id="closeArchive" class="icon">×</button></div><input type="hidden" id="archiveId"><input type="hidden" id="archiveKind"><div class="form-grid"><label class="span-2">Justificativa do encerramento<textarea id="archiveReason" rows="4" required></textarea></label></div><div class="dialog-actions"><button type="button" id="cancelArchive" class="ghost">Cancelar</button><button type="submit" class="primary">Confirmar encerramento</button></div></form></dialog>
   <dialog id="protocolProgressDialog" class="detail-dialog"><form id="protocolProgressForm" class="dialog-card">
     <div class="dialog-head"><div><small class="eyebrow">Minhas demandas</small><h3>Atualizar andamento</h3></div><button type="button" id="closeProtocolProgress" class="icon">×</button></div>
     <input type="hidden" id="pa_id"><div class="form-grid">
@@ -282,6 +291,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=02102601"></script>
+  <script src="app.js?v=02102602"></script>
 </body>
 </html>
