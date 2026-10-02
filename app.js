@@ -466,7 +466,7 @@
     function detailField(label,value,span=''){ return `<div class="detail-field ${span}"><small>${esc(label)}</small><div>${value||'—'}</div></div>`; }
     let documentsContext={planejamentoId:null,licitacaoId:null,phase:'Planejamento'};
     function safeFileName(name){return String(name||'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'arquivo';}
-    function canManageDocument(d){const uid=session?.user?.id||'';return isMaster()||String(d.criado_por||'')===String(uid);}
+    function canManageDocument(d){const uid=profile?.id||'';return isMaster()||String(d.criado_por||'')===String(uid);}
     async function resolveLicitacaoIdForPlanning(planejamentoId){
       const local=licitacoes.find(x=>String(x.planejamento_id||'')===String(planejamentoId));
       if(local)return local.id;
