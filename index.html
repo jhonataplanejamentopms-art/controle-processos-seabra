@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=02102611" />
+  <link rel="stylesheet" href="styles.css?v=02102612" />
 </head>
 <body>
   <section id="loginView" class="login-shell">
@@ -40,18 +40,27 @@
       </div>
     </header>
 
-    <nav class="main-nav">
-      <button type="button" id="navPainel" class="nav-btn" data-module="painel">Visão Geral</button>
-      <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento">Planejamento</button>
-      <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Protocolo</button>
-      <button type="button" id="navCompras" class="nav-btn hidden" data-module="compras">Compras</button>
-      <button type="button" id="navEtapaLicitacao" class="nav-btn" data-module="etapaLicitacao">Licitação <span id="etapaLicitacaoCount"></span></button>
-      <button type="button" id="navEncerrados" class="nav-btn" data-module="encerrados">Encerrado/Homologado <span id="encerradosCount"></span></button>
-      <span class="nav-spacer"></span>
-      <button type="button" id="navMinhasDemandas" class="nav-btn nav-my">Minhas demandas <span id="protocolMineCount"></span></button>
-    </nav>
+    <div class="app-shell">
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-tools">
+          <button type="button" id="sidebarToggle" class="sidebar-control" title="Recolher menu" aria-label="Recolher menu"><span class="nav-icon">☰</span><span class="nav-label">Menu</span></button>
+        </div>
+        <nav class="main-nav">
+          <button type="button" id="navPainel" class="nav-btn" data-module="painel" title="Visão Geral"><span class="nav-icon">⌂</span><span class="nav-label">Visão Geral</span></button>
+          <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento" title="Planejamento"><span class="nav-icon">▣</span><span class="nav-label">Planejamento</span></button>
+          <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes" title="Protocolo"><span class="nav-icon">⇄</span><span class="nav-label">Protocolo</span></button>
+          <button type="button" id="navCompras" class="nav-btn hidden" data-module="compras" title="Compras"><span class="nav-icon">▤</span><span class="nav-label">Compras</span></button>
+          <button type="button" id="navEtapaLicitacao" class="nav-btn" data-module="etapaLicitacao" title="Licitação"><span class="nav-icon">⚖</span><span class="nav-label">Licitação <span id="etapaLicitacaoCount"></span></span></button>
+          <button type="button" id="navEncerrados" class="nav-btn" data-module="encerrados" title="Encerrado/Homologado"><span class="nav-icon">✓</span><span class="nav-label">Encerrado/Homologado <span id="encerradosCount"></span></span></button>
+          <span class="nav-spacer"></span>
+          <button type="button" id="navMinhasDemandas" class="nav-btn nav-my" title="Minhas demandas"><span class="nav-icon">★</span><span class="nav-label">Minhas demandas <span id="protocolMineCount"></span></span></button>
+        </nav>
+        <div class="sidebar-footer">
+          <button type="button" id="themeToggle" class="sidebar-control" title="Alternar modo escuro" aria-label="Alternar modo escuro"><span id="themeIcon" class="nav-icon">☾</span><span id="themeLabel" class="nav-label">Modo escuro</span></button>
+        </div>
+      </aside>
 
-    <main class="container">
+      <main class="container">
       <section id="moduloPainel" class="module-view hidden">
         <section class="hero-row"><div><h2>Visão Geral</h2><p>Acompanhamento gerencial das demandas em Planejamento, Protocolo e Licitação.</p></div></section>
         <section class="kpis" id="geralKpis"></section>
@@ -156,6 +165,7 @@
         <section class="module-placeholder"><h3>Módulo Compras</h3><p>Será concluído após a finalização do módulo Planejamento.</p></section>
       </section>
     </main>
+    </div>
   </div>
 
   <datalist id="responsaveisList">
@@ -302,6 +312,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=02102611"></script>
+  <script src="app.js?v=02102612"></script>
 </body>
 </html>
