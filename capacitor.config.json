@@ -1,0 +1,13 @@
+{
+  "appId": "br.ba.seabra.gestaoprocessos",
+  "appName": "Gestão de Processos",
+  "webDir": "www",
+  "server": {
+    "url": "https://jhonataplanejamentopms-art.github.io/controle-processos-seabra/",
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile"
+  }
+}
