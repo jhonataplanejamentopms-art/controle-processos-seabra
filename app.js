@@ -244,16 +244,35 @@
     function isMaster(){return ['administrador','admin'].includes(String(profile.perfil||'').toLowerCase());}
     function demandPhase(x){if(x?.encaminhado_licitacao_em)return 'Licitação';if(x?.recebido_em||x?.origem==='Protocolo')return 'Protocolo';return 'Planejamento';}
     function isMyProtocol(x){const me=String(profile.nome||'').trim().toLowerCase(), r=String(x.responsavel||'').trim().toLowerCase(); if(!me||!r)return false; return me===r||me.startsWith(r+' ')||r.startsWith(me.split(' ')[0]);}
+    function protocolWaitingInfo(x){
+      const s=protocolStatus(x), base=s==='Aguardando recebimento'?(x.encaminhado_em||x.criado_em):s==='Aguardando distribuição'?x.recebido_em:null;
+      if(!base) return '';
+      const d=new Date(base); if(Number.isNaN(d.getTime())) return '';
+      const days=Math.max(0,Math.floor((today()-new Date(d.getFullYear(),d.getMonth(),d.getDate(),12))/(86400000)));
+      return days===0?'Hoje':days===1?'Há 1 dia':'Há '+days+' dias';
+    }
+    function protocolPriority(x){
+      const s=protocolStatus(x), dl=protocolDeadline(x);
+      if(x.responsavel&&x.situacao_execucao==='Pendente') return 0;
+      if(dl==='atrasado') return 0;
+      if(dl==='vence7') return 1;
+      if(s==='Aguardando recebimento'||s==='Aguardando distribuição') return 2;
+      return 3;
+    }
     function renderLicitacoes(){
       if(!$('licitacaoTbody')) return;
       const abertas=licitacoes.filter(x=>!x.arquivado&&!x.encaminhado_licitacao_em); const mine=abertas.filter(isMyProtocol); if($('protocolMineCount')) $('protocolMineCount').textContent=mine.length?'('+mine.length+')':'';
       const source=protocolView==='mine'?mine:abertas;
       const q=($('protocolSearch')?.value||'').toLowerCase(), st=$('protocolStatus')?.value||'';
-      const list=source.filter(x=>{const s=protocolStatus(x); const hay=[x.objeto,x.secretaria,x.responsavel,x.tipo_demanda,x.referencia].join(' ').toLowerCase();return(!q||hay.includes(q))&&(!st||s===st);});
-      $('licitacaoTbody').innerHTML=list.map(x=>{const s=protocolStatus(x), dl=protocolDeadline(x);return `<tr>
-        <td>${brDate(x.encaminhado_em||x.criado_em)}</td><td>${esc(x.tipo_demanda||'Processo Licitatório')}</td><td><button type="button" class="link-button" data-protocol-history="${esc(x.id)}"><strong>${esc(x.objeto||'—')}</strong></button></td><td>${esc(x.secretaria||'—')}</td>
-        <td>${x.recebido_em?new Date(x.recebido_em).toLocaleString('pt-BR'):'—'}</td><td>${esc(x.responsavel||'—')}</td><td>${x.distribuido_em?new Date(x.distribuido_em).toLocaleString('pt-BR'):'—'}</td>
-        <td>${x.prazo_execucao_dias?esc(x.prazo_execucao_dias)+' dias úteis':'—'}</td><td>${x.data_limite_execucao?`<span class="badge ${dl}">${brDate(x.data_limite_execucao)}</span>`:'—'}</td><td><span class="badge ${x.situacao_execucao==='Concluída'?'ok':x.situacao_execucao==='Pendente'?'warn':s==='Distribuído'?'info':''}">${esc(x.situacao_execucao&&x.responsavel?x.situacao_execucao:s)}</span></td>
+      const list=source.filter(x=>{const s=protocolStatus(x); const hay=[x.objeto,x.secretaria,x.responsavel,x.tipo_demanda,x.referencia].join(' ').toLowerCase();return(!q||hay.includes(q))&&(!st||s===st);}).sort((a,b)=>{
+        const pa=protocolPriority(a),pb=protocolPriority(b);if(pa!==pb)return pa-pb;
+        const da=String(a.data_limite_execucao||'9999-12-31'),db=String(b.data_limite_execucao||'9999-12-31');if(da!==db)return da.localeCompare(db);
+        return String(a.encaminhado_em||a.criado_em||'').localeCompare(String(b.encaminhado_em||b.criado_em||''));
+      });
+      $('licitacaoTbody').innerHTML=list.map(x=>{const s=protocolStatus(x), dl=protocolDeadline(x),wait=protocolWaitingInfo(x), rowClass=dl==='atrasado'?'overdue-row':dl==='vence7'?'soon-row':'', statusLabel=x.situacao_execucao&&x.responsavel?x.situacao_execucao:s;return `<tr class="${rowClass}">
+        <td>${brDate(x.encaminhado_em||x.criado_em)}${wait?`<br><small class="muted">${esc(wait)}</small>`:''}</td><td>${esc(x.tipo_demanda||'Processo Licitatório')}</td><td><button type="button" class="link-button" data-protocol-history="${esc(x.id)}"><strong>${esc(x.objeto||'—')}</strong></button></td><td>${esc(x.secretaria||'—')}</td>
+        <td>${x.recebido_em?new Date(x.recebido_em).toLocaleString('pt-BR'):'—'}${s==='Aguardando distribuição'&&wait?`<br><small class="muted">${esc(wait)}</small>`:''}</td><td>${esc(x.responsavel||'—')}</td><td>${x.distribuido_em?new Date(x.distribuido_em).toLocaleString('pt-BR'):'—'}</td>
+        <td>${x.prazo_execucao_dias?esc(x.prazo_execucao_dias)+' dias úteis':'—'}</td><td>${x.data_limite_execucao?`<span class="badge ${dl}">${brDate(x.data_limite_execucao)}</span>`:'—'}</td><td><span class="badge ${x.situacao_execucao==='Concluída'?'ok':x.situacao_execucao==='Pendente'?'warn':s==='Distribuído'?'info':''}">${esc(statusLabel)}</span></td>
         <td>${protocolView==='mine'&&isMyProtocol(x)&&x.responsavel?`<button class="primary" data-progress="${esc(x.id)}">Atualizar andamento</button> ${x.situacao_execucao==='Concluída'&&!x.encaminhado_licitacao_em&&(x.tipo_demanda==='Processo Licitatório'||!!x.planejamento_id)?`<button class="ghost" data-forward="${esc(x.id)}">Encaminhar p/ Licitação</button>`:''}`:!x.recebido_em&&profile.pode_receber_licitacao&&protocolCanEdit()?`<button class="receive-btn" data-receive="${esc(x.id)}">Receber</button>`:x.recebido_em&&!x.responsavel&&protocolCanEdit()?`<button class="primary" data-distribute="${esc(x.id)}">Distribuir</button>`:'—'}</td>
       </tr>`;}).join('');
       $('licitacaoEmpty')?.classList.toggle('hidden',list.length>0); $('licitacaoResultCount').textContent=`${list.length} demanda${list.length===1?'':'s'}`;
