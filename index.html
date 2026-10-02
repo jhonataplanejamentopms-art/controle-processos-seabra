@@ -34,8 +34,9 @@
         <span>Prefeitura Municipal de Seabra/BA</span>
       </div>
       <div class="user-area">
-        <div class="global-search-wrap">
-          <input id="globalSearch" class="global-search" type="search" placeholder="Buscar em todos os processos..." autocomplete="off" aria-label="Busca global">
+        <div id="globalSearchWrap" class="global-search-wrap">
+          <button type="button" id="globalSearchToggle" class="global-search-toggle" title="Buscar processos" aria-label="Buscar processos">⌕</button>
+          <input id="globalSearch" class="global-search hidden" type="search" placeholder="Buscar em todos os processos..." autocomplete="off" aria-label="Busca global">
           <div id="globalSearchResults" class="global-search-results hidden"></div>
         </div>
         <button type="button" id="navMinhasDemandas" class="ghost top-my-demand" title="Minhas demandas">★ Minhas demandas <span id="protocolMineCount"></span></button>
