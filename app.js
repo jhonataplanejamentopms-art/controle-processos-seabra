@@ -651,6 +651,8 @@
       else { $('protocolDistributeDialog').close(); await loadLicitacoes(); }
       if(btn){btn.disabled=false;btn.textContent='Distribuir';}
     });
+    $('globalSearchToggle')?.addEventListener('click',()=>{const w=$('globalSearchWrap'),i=$('globalSearch');w?.classList.add('search-open');i?.classList.remove('hidden');setTimeout(()=>i?.focus(),0);});
+    $('globalSearch')?.addEventListener('keydown',e=>{if(e.key==='Escape'){e.target.value='';$('globalSearchResults')?.classList.add('hidden');$('globalSearchWrap')?.classList.remove('search-open');e.target.classList.add('hidden');}});
     $('globalSearch')?.addEventListener('input',renderGlobalSearch);
     $('globalSearchResults')?.addEventListener('click',e=>{const b=e.target.closest('[data-global-id]');if(b)openGlobalResult(b.dataset.globalKind,b.dataset.globalId);});
     document.addEventListener('click',e=>{if(!e.target.closest('.global-search-wrap'))$('globalSearchResults')?.classList.add('hidden');});
