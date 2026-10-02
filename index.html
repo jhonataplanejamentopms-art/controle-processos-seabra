@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <link rel="stylesheet" href="styles.css?v=02102607" />
+  <link rel="stylesheet" href="styles.css?v=02102608" />
 </head>
 <body>
   <section id="loginView" class="login-shell">
@@ -41,6 +41,7 @@
     </header>
 
     <nav class="main-nav">
+      <button type="button" id="navPainel" class="nav-btn" data-module="painel">Visão Geral</button>
       <button type="button" id="navPlanejamento" class="nav-btn active" data-module="planejamento">Planejamento</button>
       <button type="button" id="navLicitacoes" class="nav-btn" data-module="licitacoes">Protocolo</button>
       <button type="button" id="navCompras" class="nav-btn hidden" data-module="compras">Compras</button>
@@ -51,6 +52,16 @@
     </nav>
 
     <main class="container">
+      <section id="moduloPainel" class="module-view hidden">
+        <section class="hero-row"><div><h2>Visão Geral</h2><p>Acompanhamento gerencial das demandas em Planejamento, Protocolo e Licitação.</p></div></section>
+        <section class="kpis" id="geralKpis"></section>
+        <section class="dashboard-grid">
+          <section class="table-card dashboard-card"><h3>Demandas por fase</h3><div id="geralFases"></div></section>
+          <section class="table-card dashboard-card"><h3>Atenção necessária</h3><div id="geralAtencao"></div></section>
+        </section>
+        <section class="table-card dashboard-card"><h3>Movimentações recentes</h3><div id="geralRecentes"></div></section>
+      </section>
+
       <section id="moduloLicitacoes" class="module-view hidden">
         <section class="hero-row">
           <div><h2>Protocolo</h2><p>Recepção, registro e distribuição das demandas do setor de Licitações.</p></div>
@@ -291,6 +302,6 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=02102607"></script>
+  <script src="app.js?v=02102608"></script>
 </body>
 </html>
