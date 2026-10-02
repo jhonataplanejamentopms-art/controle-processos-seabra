@@ -389,7 +389,7 @@
     function detailField(label,value,span=''){ return `<div class="detail-field ${span}"><small>${esc(label)}</small><div>${value||'—'}</div></div>`; }
     let documentsContext={planejamentoId:null,licitacaoId:null,phase:'Planejamento'};
     function safeFileName(name){return String(name||'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_').replace(/^_+|_+$/g,'')||'arquivo';}
-    function canManageDocument(d){return isMaster()||String(d.criado_por||'')===String(profile.id||'');}
+    function canManageDocument(d){const uid=session?.user?.id||'';return isMaster()||String(d.criado_por||'')===String(uid);}
     async function resolveLicitacaoIdForPlanning(planejamentoId){
       const local=licitacoes.find(x=>String(x.planejamento_id||'')===String(planejamentoId));
       if(local)return local.id;
@@ -411,12 +411,12 @@
     }
     async function uploadDocuments(){
       const files=[...($('documentsFiles').files||[])];if(!files.length)return alert('Selecione pelo menos um arquivo.');
-      const {planejamentoId,licitacaoId,phase}=documentsContext;const btn=$('uploadDocumentsBtn');btn.disabled=true;btn.textContent='Enviando...';
+      const {planejamentoId,licitacaoId,phase}=documentsContext;const canonicalPlanejamentoId=planejamentoId||null,canonicalLicitacaoId=canonicalPlanejamentoId?null:(licitacaoId||null);const btn=$('uploadDocumentsBtn');btn.disabled=true;btn.textContent='Enviando...';
       try{
         for(const file of files){if(file.size>52428800)throw new Error('O arquivo "'+file.name+'" ultrapassa 50 MB.');
-          const id=crypto.randomUUID(),root=planejamentoId||licitacaoId,path=(root||'demanda')+'/'+id+'/'+safeFileName(file.name);
+          const id=crypto.randomUUID(),root=canonicalPlanejamentoId||canonicalLicitacaoId,path=(root||'demanda')+'/'+id+'/'+safeFileName(file.name);
           const up=await client.storage.from('documentos-demandas').upload(path,file,{contentType:file.type||'application/octet-stream',upsert:false});if(up.error)throw up.error;
-          const ins=await client.from('documentos_demandas').insert({id,planejamento_id:planejamentoId||null,licitacao_id:licitacaoId||null,nome_arquivo:safeFileName(file.name),nome_original:file.name,caminho_storage:path,tipo_mime:file.type||null,tamanho_bytes:file.size,fase_inclusao:phase,criado_por:profile.id});
+          const ins=await client.from('documentos_demandas').insert({id,planejamento_id:canonicalPlanejamentoId,licitacao_id:canonicalLicitacaoId,nome_arquivo:safeFileName(file.name),nome_original:file.name,caminho_storage:path,tipo_mime:file.type||null,tamanho_bytes:file.size,fase_inclusao:phase,criado_por:profile.id});
           if(ins.error){await client.storage.from('documentos-demandas').remove([path]);throw ins.error;}
         }
         $('documentsFiles').value='';await loadDocuments();
