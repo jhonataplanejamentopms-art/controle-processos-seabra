@@ -680,3 +680,41 @@ body.dark-mode dialog::backdrop{background:rgba(0,0,0,.68)}
   }
 
 }
+
+/* iPhone v9 — filtros finais do Planejamento */
+@media(max-width:760px){
+
+  /* Recursos de desktop não aparecem no app */
+  #moduloPlanejamento #exportBtn,
+  #moduloPlanejamento #printBtn{
+    display:none!important;
+  }
+
+  /* Bloco de filtros mais compacto */
+  #moduloPlanejamento .filters{
+    padding:12px!important;
+    gap:8px!important;
+  }
+
+  #moduloPlanejamento .filters input,
+  #moduloPlanejamento .filters select,
+  #moduloPlanejamento .filters button{
+    min-height:44px!important;
+  }
+
+  #moduloPlanejamento #clearFilters{
+    min-height:44px!important;
+  }
+
+}
+
+/* iPhone v10 — acabamento dos campos de busca */
+@media(max-width:760px){
+
+  #moduloLicitacoes input[type="search"]::placeholder,
+  #moduloEtapaLicitacao input[type="search"]::placeholder,
+  #moduloEncerrados input[type="search"]::placeholder{
+    font-size:14px!important;
+  }
+
+}
