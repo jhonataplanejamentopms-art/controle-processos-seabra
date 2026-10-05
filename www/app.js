@@ -250,14 +250,15 @@
       $('geralKpis').innerHTML=[['Aguardando ação',aguard.length],['Prazos vencidos',protVenc.length+licVenc.length],['Próximos vencimentos',protProx.length+licProx.length],['Em execução',prot.filter(x=>['Em andamento','Aguardando terceiros'].includes(x.situacao_execucao)).length],['Sessões próximas',licProx.length],['Impedimentos',imped.length]].map(([n,v],i)=>'<div class="kpi '+(i===1?'danger':i===2||i===4?'warn':'')+'"><small>'+n+'</small><b>'+v+'</b></div>').join('');
       $('geralFases').innerHTML=[['Planejamento',plan.length],['Protocolo',prot.length],['Licitação',lic.length],['Arquivo',enc]].map(([n,v])=>'<button type="button" class="dashboard-line dashboard-link" data-dashboard-module="'+(n==='Arquivo'?'encerrados':n==='Licitação'?'etapaLicitacao':n==='Protocolo'?'licitacoes':'planejamento')+'"><span>'+n+'</span><strong>'+v+'</strong></button>').join('');
       const attention=[
-        ...protVenc.map(x=>({n:x.objeto,r:'Protocolo · prazo vencido em '+brDate(x.data_limite_execucao),p:0})),
-        ...licVenc.map(x=>({n:x.objeto,r:'Licitação · sessão vencida em '+brDate(x.data_sessao),p:0})),
-        ...imped.map(x=>({n:x.objeto,r:'Impedimento: '+x.impedimento_execucao,p:1})),
-        ...protProx.map(x=>({n:x.objeto,r:'Protocolo · prazo próximo em '+brDate(x.data_limite_execucao),p:2})),
-        ...licProx.map(x=>({n:x.objeto,r:'Licitação · sessão próxima em '+brDate(x.data_sessao),p:2})),
-        ...aguard.map(x=>({n:x.objeto,r:'Protocolo · '+protocolStatus(x).toLowerCase(),p:3}))
+        ...protVenc.map(x=>({id:x.id,fase:'Protocolo',n:x.objeto,r:'Protocolo · prazo vencido em '+brDate(x.data_limite_execucao),p:0})),
+        ...licVenc.map(x=>({id:x.id,fase:'Licitação',n:x.objeto,r:'Licitação · sessão vencida em '+brDate(x.data_sessao),p:0})),
+        ...imped.map(x=>({id:x.id,fase:x.encaminhado_licitacao_em?'Licitação':'Protocolo',n:x.objeto,r:'Impedimento: '+x.impedimento_execucao,p:1})),
+        ...protProx.map(x=>({id:x.id,fase:'Protocolo',n:x.objeto,r:'Protocolo · prazo próximo em '+brDate(x.data_limite_execucao),p:2})),
+        ...licProx.map(x=>({id:x.id,fase:'Licitação',n:x.objeto,r:'Licitação · sessão próxima em '+brDate(x.data_sessao),p:2})),
+        ...aguard.map(x=>({id:x.id,fase:'Protocolo',n:x.objeto,r:'Protocolo · '+protocolStatus(x).toLowerCase(),p:3}))
       ].sort((a,b)=>a.p-b.p).slice(0,10);
-      $('geralAtencao').innerHTML=attention.length?attention.map(x=>'<div class="dashboard-line alert-line"><span><strong>'+esc(x.n||'Demanda')+'</strong><small>'+esc(x.r)+'</small></span></div>').join(''):'<div class="history-empty">Nenhuma pendência crítica no momento.</div>';
+      $('geralAtencao').innerHTML=attention.length?attention.map(x=>'<button type="button" class="dashboard-line dashboard-link alert-line" data-attention-id="'+esc(x.id)+'" data-attention-phase="'+esc(x.fase)+'"><span><strong>'+esc(x.n||'Demanda')+'</strong><small>'+esc(x.r)+'</small></span><span aria-hidden="true">›</span></button>').join(''):'<div class="history-empty">Nenhuma pendência crítica no momento.</div>';
+      document.querySelectorAll('[data-attention-id]').forEach(b=>b.onclick=()=>openProtocolHistory(b.dataset.attentionId));
       const recent=[...licitacoes.filter(x=>!x.arquivado).map(x=>({n:x.objeto,d:x.atualizado_em||x.distribuido_em||x.encaminhado_em,f:x.encaminhado_licitacao_em?'Licitação':'Protocolo',s:x.situacao_execucao||protocolStatus(x),c:processCode(x,x.encaminhado_licitacao_em?'Licitação':'Protocolo')})),...items.filter(x=>!x.arquivado&&!x.data_envio_licitacao).map(x=>({n:x.demanda,d:x.atualizado_em||x.data_inicio_planejamento,f:'Planejamento',s:x.situacao_geral||'Planejamento',c:processCode(x,'Planejamento')}))].filter(x=>x.d).sort((a,b)=>String(b.d).localeCompare(String(a.d))).slice(0,10);
       $('geralRecentes').innerHTML=recent.length?recent.map(x=>'<div class="dashboard-line"><span><strong>'+esc(x.n||'Demanda')+'</strong><small>'+esc(x.c)+' · '+esc(x.f)+' · '+esc(x.s||'')+'</small></span><span>'+new Date(x.d).toLocaleDateString('pt-BR')+'</span></div>').join(''):'<div class="history-empty">Sem movimentações recentes.</div>';
       document.querySelectorAll('[data-dashboard-module]').forEach(b=>b.onclick=()=>showModule(b.dataset.dashboardModule));
