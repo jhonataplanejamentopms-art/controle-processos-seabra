@@ -1,0 +1,19 @@
+{
+  "name": "Gestão de Processos",
+  "short_name": "Gestão Processos",
+  "description": "Gestão e acompanhamento de processos.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#1f2937",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
