@@ -87,7 +87,7 @@
           <select id="protocolStatus"><option value="">Todas as situações</option><option>Aguardando recebimento</option><option>Aguardando distribuição</option><option>Distribuído</option><option>Pendente</option><option>Cancelado</option></select>
         </section>
         <section class="result-summary"><span id="licitacaoResultCount">0 demandas</span><span>Entrada → recebimento → distribuição → execução.</span></section>
-        <section class="table-card"><div class="table-wrap"><table>
+        <section class="table-card"><div class="table-wrap"><table class="protocolo-table">
           <thead><tr><th>Entrada</th><th>Tipo</th><th>Demanda / Assunto</th><th>Secretaria</th><th>Recebida em</th><th>Responsável</th><th>Distribuída em</th><th>Prazo</th><th>Data limite</th><th>Situação</th><th>Ação</th></tr></thead>
           <tbody id="licitacaoTbody"></tbody>
         </table></div><div id="licitacaoEmpty" class="empty hidden">Nenhuma demanda no Protocolo.</div></section>
@@ -98,14 +98,14 @@
         <section class="kpis" id="etapaLicitacaoKpis"></section>
         <section class="filters"><input id="etapaLicitacaoSearch" type="search" placeholder="Buscar processo, secretaria, modalidade ou responsável"><select id="etapaLicitacaoScope"><option value="ongoing">Em andamento</option><option value="finished">Finalizados</option><option value="all">Todos</option></select><select id="etapaLicitacaoStatus"><option value="">Todas as situações</option><option>Encaminhada à Licitação</option><option>Preparando publicação</option><option>Publicado</option><option>Sessão realizada</option><option>Em julgamento/habilitação</option><option>Homologado</option><option>Fracassado</option><option>Deserto</option><option>Revogado</option><option>Anulado</option></select></section>
         <section class="result-summary"><span id="etapaLicitacaoResultCount">0 processos</span><span>Encaminhamento → publicação → sessão → resultado.</span></section>
-        <section class="table-card"><div class="table-wrap"><table><thead><tr><th>Demanda</th><th>Modalidade</th><th>Secretaria</th><th>Responsável</th><th>Sessão</th><th>Situação</th><th>Ação</th></tr></thead><tbody id="etapaLicitacaoTbody"></tbody></table></div><div id="etapaLicitacaoEmpty" class="empty hidden">Nenhum processo encaminhado para Licitação.</div></section>
+        <section class="table-card"><div class="table-wrap"><table class="licitacao-mobile-table"><thead><tr><th>Demanda</th><th>Modalidade</th><th>Secretaria</th><th>Responsável</th><th>Sessão</th><th>Situação</th><th>Ação</th></tr></thead><tbody id="etapaLicitacaoTbody"></tbody></table></div><div id="etapaLicitacaoEmpty" class="empty hidden">Nenhum processo encaminhado para Licitação.</div></section>
       </section>
 
       <section id="moduloEncerrados" class="module-view hidden">
         <section class="hero-row"><div><h2>Encerrado/Homologado</h2><p>Arquivo das demandas encerradas e dos processos homologados ou fracassados.</p></div></section>
         <section class="filters"><input id="encerradosSearch" type="search" placeholder="Buscar demanda ou secretaria"><select id="encerradosResultado"><option value="">Todos os resultados</option><option>Encerrado</option><option>Homologado</option><option>Fracassado</option></select></section>
         <section class="result-summary"><span id="encerradosResultCount">0 registros</span><span>Histórico e documentos preservados.</span></section>
-        <section class="table-card"><div class="table-wrap"><table><thead><tr><th>Demanda</th><th>Secretaria</th><th>Origem</th><th>Resultado</th><th>Data</th><th>Justificativa / Homologação</th><th>Ação</th></tr></thead><tbody id="encerradosTbody"></tbody></table></div><div id="encerradosEmpty" class="empty hidden">Nenhuma demanda arquivada.</div></section>
+        <section class="table-card"><div class="table-wrap"><table class="encerrados-mobile-table"><thead><tr><th>Demanda</th><th>Secretaria</th><th>Origem</th><th>Resultado</th><th>Data</th><th>Justificativa / Homologação</th><th>Ação</th></tr></thead><tbody id="encerradosTbody"></tbody></table></div><div id="encerradosEmpty" class="empty hidden">Nenhuma demanda arquivada.</div></section>
       </section>
 
       <section id="moduloPlanejamento" class="module-view">
@@ -151,9 +151,9 @@
           <span id="filterHint">Ordenação: prioridade de prazo</span>
         </section>
 
-        <section class="table-card">
+        <section class="table-card planejamento-list">
           <div class="table-wrap">
-            <table>
+            <table class="planejamento-table">
               <thead>
                 <tr>
                   <th>Nº</th><th>Demanda</th><th>Secretaria</th><th>Tipo</th><th>Modalidade</th><th>Cotação</th><th>Prazo</th><th>Envio</th><th>Valor</th><th>Responsável</th><th>Próxima providência</th><th>Situação</th><th>Ações</th>
