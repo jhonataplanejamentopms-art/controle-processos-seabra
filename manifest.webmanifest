@@ -10,10 +10,10 @@
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "pwa-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "./apple-touch-icon.png?v=2",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
