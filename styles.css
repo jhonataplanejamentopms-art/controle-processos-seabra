@@ -109,3 +109,23 @@ body.dark-mode dialog::backdrop{background:rgba(0,0,0,.68)}
   .document-item{padding:10px}.document-actions button{min-height:40px}
   .phase-tracker{overflow-x:auto;grid-template-columns:repeat(4,minmax(82px,1fr));padding:4px 0}.phase-step small{font-size:9px}
 }
+
+
+/* iPhone v2 — corrige cascata do layout desktop e fixa navegação inferior */
+@media(max-width:760px){
+  .topbar{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;min-height:58px!important;padding:8px 12px!important}
+  .system-title{display:block!important;min-width:0;flex:1}.system-title strong{display:block;font-size:16px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.system-title span{display:none!important}
+  .user-area{display:flex!important;flex:0 0 auto!important;margin:0!important;flex-direction:row!important;align-items:center!important;gap:6px!important}
+  #userBadge{display:none!important}.top-my-demand{width:40px!important;height:40px!important;padding:0!important;overflow:hidden}.top-my-demand::before{content:'★';font-size:18px}.top-my-demand{font-size:0!important}.top-my-demand span{display:none!important}
+  #logoutBtn{width:40px;height:40px;padding:0!important;font-size:0!important}#logoutBtn::before{content:'↪';font-size:20px}
+  .global-search-toggle{width:40px!important;height:40px!important;font-size:20px!important}
+  .app-shell,body.sidebar-collapsed .app-shell{display:block!important;grid-template-columns:none!important;min-height:calc(100dvh - 58px)!important}
+  .sidebar,body.sidebar-collapsed .sidebar{position:fixed!important;top:auto!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:auto!important;min-height:0!important;padding:6px 8px max(6px,env(safe-area-inset-bottom))!important;border:0!important;border-top:1px solid var(--line)!important;z-index:999!important;overflow:visible!important}
+  .sidebar-tools,.sidebar-footer{display:none!important}
+  .main-nav{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:2px!important;width:100%!important;padding:0!important;border:0!important;overflow:visible!important}
+  .sidebar .nav-btn,body.sidebar-collapsed .sidebar .nav-btn{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:3px!important;width:100%!important;min-width:0!important;min-height:50px!important;padding:5px 1px!important}
+  .sidebar .nav-label,body.sidebar-collapsed .sidebar .nav-label{display:block!important;font-size:9px!important;line-height:1!important;max-width:100%;overflow:hidden;text-overflow:ellipsis;text-align:center}
+  .sidebar .nav-icon{font-size:18px!important;width:auto!important;min-width:0!important}
+  .container{padding:16px 12px calc(78px + env(safe-area-inset-bottom))!important}
+  .hero-row{margin-bottom:12px!important}.hero-row h2{font-size:24px!important}
+}
