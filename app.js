@@ -196,7 +196,18 @@
       const attention=[...new Map([...overdue,...impeded].map(x=>[String(x.id),x])).values()].slice(0,8);
       return ['📊 *ACOMPANHAMENTO SEMANAL – PLANEJAMENTO*','📅 Período: '+fmt(r.start)+' a '+fmt(r.end),'','📌 *CENÁRIO ATUAL*','• Demandas em andamento: '+active.length,'• Em cotação: '+active.filter(x=>x.situacao_cotacao==='Cotando').length,'• Atrasadas: '+overdue.length,'• Com impedimento: '+impeded.length,'• A vencer em 7 dias: '+due7.length,'','✅ *ENVIADAS AO PROTOCOLO NA SEMANA*',list(sent,x=>x.demanda+' — '+brDate(x.data_envio_licitacao)),'','🏁 *CONCLUÍDAS NA SEMANA*',list(concluded,x=>x.demanda),'','⚠️ *PONTOS DE ATENÇÃO*',list(attention,x=>x.demanda+' — '+(x.impedimentos||deadlineAt(x).label)),'','📋 *PRÓXIMAS PROVIDÊNCIAS*',list(next,x=>x.demanda+' — '+splitObs(x.observacoes).proxima),'','🏛️ Planejamento | Prefeitura Municipal de Seabra'].join('\n');
     }
-    async function refreshWeeklyWhatsapp(){const ta=$('weeklyWhatsappText');if(!ta)return;const s=$('weeklyWhatsappStart')?.value||'',e=$('weeklyWhatsappEnd')?.value||'';if(s&&e&&s>e)return alert('A data inicial não pode ser posterior à data final.');ta.value='Gerando resumo...';ta.value=await buildWeeklyWhatsapp(s,e);}
+    async function refreshWeeklyWhatsapp(){
+      const ta=$('weeklyWhatsappText'),btn=$('updateWeeklyWhatsapp'),loading=$('weeklyWhatsappLoading');if(!ta)return;
+      const s=$('weeklyWhatsappStart')?.value||'',e=$('weeklyWhatsappEnd')?.value||'';
+      if(!s||!e)return alert('Informe a data inicial e a data final.');
+      if(s>e)return alert('A data inicial não pode ser posterior à data final.');
+      try{
+        if(btn){btn.disabled=true;btn.textContent='Atualizando...';} loading?.classList.remove('hidden'); ta.value='Gerando resumo do período...';
+        await new Promise(resolve=>setTimeout(resolve,80));
+        ta.value=await buildWeeklyWhatsapp(s,e);
+      }catch(err){ta.value='Não foi possível gerar o resumo.';alert('Erro ao atualizar o resumo: '+(err?.message||err));}
+      finally{loading?.classList.add('hidden');if(btn){btn.disabled=false;btn.textContent='Atualizar resumo';}}
+    }
     async function openWeeklyWhatsapp(){const r=weekRange(),s=$('weeklyWhatsappStart'),e=$('weeklyWhatsappEnd');if(s&&!s.value)s.value=r.startIso;if(e&&!e.value)e.value=r.endIso;$('weeklyWhatsappDialog').showModal();await refreshWeeklyWhatsapp();}
 
     async function loadProfile(){
@@ -310,7 +321,18 @@
         '⚠️ *PONTOS DE ATENÇÃO*',list([...aguardaReceb,...aguardaDist,...pendentes,...atrasadas].filter((x,i,a)=>a.findIndex(y=>String(y.id)===String(x.id))===i),x=>(x.objeto||'Demanda')+' — '+protocolStatus(x)+(x.data_limite_execucao?' | '+brDate(x.data_limite_execucao):'')),'',
         '🏛️ Licitações - Protocolo | Prefeitura Municipal de Seabra'].join('\n');
     }
-    function refreshWeeklyProtocol(){const s=$('weeklyProtocolStart')?.value||'',e=$('weeklyProtocolEnd')?.value||'';if(s&&e&&s>e)return alert('A data inicial não pode ser posterior à data final.');$('weeklyProtocolText').value=buildWeeklyProtocol(s,e);}
+    async function refreshWeeklyProtocol(){
+      const ta=$('weeklyProtocolText'),btn=$('updateWeeklyProtocol'),loading=$('weeklyProtocolLoading');if(!ta)return;
+      const s=$('weeklyProtocolStart')?.value||'',e=$('weeklyProtocolEnd')?.value||'';
+      if(!s||!e)return alert('Informe a data inicial e a data final.');
+      if(s>e)return alert('A data inicial não pode ser posterior à data final.');
+      try{
+        if(btn){btn.disabled=true;btn.textContent='Atualizando...';}loading?.classList.remove('hidden');ta.value='Gerando resumo do período...';
+        await new Promise(resolve=>setTimeout(resolve,80));
+        ta.value=buildWeeklyProtocol(s,e);
+      }catch(err){ta.value='Não foi possível gerar o resumo.';alert('Erro ao atualizar o resumo: '+(err?.message||err));}
+      finally{loading?.classList.add('hidden');if(btn){btn.disabled=false;btn.textContent='Atualizar resumo';}}
+    }
     function openWeeklyProtocol(){const r=protocolWeekRange(),s=$('weeklyProtocolStart'),e=$('weeklyProtocolEnd');if(s&&!s.value)s.value=r.start.toISOString().slice(0,10);if(e&&!e.value)e.value=r.end.toISOString().slice(0,10);$('weeklyProtocolDialog').showModal();refreshWeeklyProtocol();}
 
     function protocolDeadline(x){
