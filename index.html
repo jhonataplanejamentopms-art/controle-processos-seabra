@@ -246,7 +246,7 @@
     <div class="dialog-card">
       <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyWhatsapp" class="icon">×</button></div>
       <p class="muted">Período automático: segunda-feira até o dia atual.</p>
-      <div class="weekly-period-picker"><label>Data inicial<input type="date" id="weeklyWhatsappStart"></label><label>Data final<input type="date" id="weeklyWhatsappEnd"></label><button type="button" id="updateWeeklyWhatsapp" class="primary">Atualizar resumo</button></div><textarea id="weeklyWhatsappText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
+      <div class="weekly-period-picker"><label>Data inicial<input type="date" id="weeklyWhatsappStart"></label><label>Data final<input type="date" id="weeklyWhatsappEnd"></label><button type="button" id="updateWeeklyWhatsapp" class="primary">Atualizar resumo</button></div><div id="weeklyWhatsappLoading" class="summary-loading hidden"><div class="summary-loading-bar"><span></span></div><small>Atualizando resumo do período...</small></div><textarea id="weeklyWhatsappText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
       <div class="dialog-actions"><button type="button" id="copyWeeklyWhatsapp" class="primary">Copiar resumo</button></div>
     </div>
   </dialog>
@@ -313,7 +313,7 @@
   <dialog id="weeklyProtocolDialog" class="detail-dialog">
     <div class="dialog-card">
       <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyProtocol" class="icon">×</button></div>
-      <p class="muted">Acompanhamento do Protocolo com posição atual e movimentações da semana.</p><div class="weekly-period-picker"><label>Data inicial<input type="date" id="weeklyProtocolStart"></label><label>Data final<input type="date" id="weeklyProtocolEnd"></label><button type="button" id="updateWeeklyProtocol" class="primary">Atualizar resumo</button></div>
+      <p class="muted">Acompanhamento do Protocolo com posição atual e movimentações da semana.</p><div class="weekly-period-picker"><label>Data inicial<input type="date" id="weeklyProtocolStart"></label><label>Data final<input type="date" id="weeklyProtocolEnd"></label><button type="button" id="updateWeeklyProtocol" class="primary">Atualizar resumo</button></div><div id="weeklyProtocolLoading" class="summary-loading hidden"><div class="summary-loading-bar"><span></span></div><small>Atualizando resumo do período...</small></div>
       <textarea id="weeklyProtocolText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
       <div class="dialog-actions"><button type="button" id="copyWeeklyProtocol" class="primary">Copiar resumo</button></div>
     </div>
