@@ -401,7 +401,10 @@
       const prot=licitacoes.filter(x=>x.arquivado).map(x=>({kind:'licitacao',id:x.id,nome:x.objeto,secretaria:x.secretaria,origem:x.fase_origem_arquivamento||demandPhase(x),resultado:x.resultado_arquivamento||'Encerrado',data:x.arquivado_em,justificativa:x.justificativa_encerramento,hom:x.data_homologacao,raw:x}));
       const plan=items.filter(x=>x.arquivado).map(x=>({kind:'planejamento',id:x.id,nome:x.demanda,secretaria:x.secretaria,origem:'Planejamento',resultado:'Encerrado',data:x.arquivado_em,justificativa:x.justificativa_encerramento,raw:x}));
       const all=[...prot,...plan].sort((a,b)=>String(b.data||'').localeCompare(String(a.data||'')));
-      if($('encerradosCount'))$('encerradosCount').textContent=all.length?'('+all.length+')':'';
+      if($('encerradosCount')){
+        const mairaFinalizados=prot.filter(x=>String(x.raw?.responsavel_licitacao||'').trim().toLowerCase()==='maira').length;
+        $('encerradosCount').textContent=all.length?'('+all.length+' · Maíra: '+mairaFinalizados+')':'';
+      }
       const q=($('encerradosSearch')?.value||'').toLowerCase(),r=$('encerradosResultado')?.value||'';
       const list=all.filter(x=>(!q||[x.nome,x.secretaria,x.origem,x.raw?.modalidade].join(' ').toLowerCase().includes(q))&&(!r||x.resultado===r));
       $('encerradosTbody').innerHTML=list.map(x=>`<tr><td><strong>${esc(x.nome||'—')}</strong></td><td>${esc(x.secretaria||'—')}</td><td>${esc(x.origem)}</td><td><span class="badge ${x.resultado==='Homologado'?'ok':['Fracassado','Deserto','Revogado','Anulado'].includes(x.resultado)?'warn':'info'}">${esc(x.resultado)}</span></td><td>${x.data?new Date(x.data).toLocaleDateString('pt-BR'):'—'}</td><td>${x.resultado==='Homologado'?'Homologação: '+brDate(x.hom):esc(x.justificativa||'—')}</td><td><button class="ghost" data-arch-open="${esc(x.kind)}:${esc(x.id)}">Detalhes</button> ${isMaster()?`<button class="primary" data-arch-return="${esc(x.kind)}:${esc(x.id)}">Retomar</button>`:''}</td></tr>`).join('');
