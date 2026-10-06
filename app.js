@@ -170,7 +170,13 @@
     }
     async function buildWeeklyWhatsapp(reference=''){
       const r=weekRange(reference), all=items.map(enriched);
-      const active=all.filter(x=>!x.data_envio_licitacao&&!['Concluído','Cancelado','Suspenso'].includes(x.situacao_geral));
+      const snapshotDate=r.endIso;
+      const active=all.filter(x=>{
+        const inicio=String(x.data_inicio_planejamento||x.criado_em||'').slice(0,10);
+        const envio=String(x.data_envio_licitacao||'').slice(0,10);
+        const finalizado=['Concluído','Cancelado','Suspenso'].includes(x.situacao_geral);
+        return (!inicio||inicio<=snapshotDate) && (!envio||envio>snapshotDate) && !(finalizado && String(x.atualizado_em||'').slice(0,10)<=snapshotDate);
+      });
       const sent=all.filter(x=>{const d=dateOnly(x.data_envio_licitacao);return d&&d>=r.start&&d<=r.end;});
       let concluded=[];
       try{
@@ -180,12 +186,13 @@
           concluded=all.filter(x=>ids.has(String(x.id)));
         }
       }catch(_){}
-      const overdue=active.filter(x=>x.deadline.key==='atrasado'), impeded=active.filter(x=>(x.impedimentos||'').trim()), due7=active.filter(x=>x.deadline.key==='vence7');
+      const deadlineAt=(x)=>{if(!x.data_limite_planejamento)return {key:'semlimite',label:'Sem data limite'};const lim=dateOnly(x.data_limite_planejamento),ref=dateOnly(snapshotDate);if(lim<ref){const days=Math.abs(businessDaysDiff(lim,ref));return {key:'atrasado',label:'Atrasado há '+days+' dia'+(days===1?'':'s')+' útil'+(days===1?'':'eis')};}const days=businessDaysDiff(ref,lim);return days<=7?{key:'vence7',label:days===0?'Vence hoje':'Vence em '+days+' dias úteis'}:{key:'noprazo',label:'No prazo · '+days+' dias úteis'};};
+      const overdue=active.filter(x=>deadlineAt(x).key==='atrasado'), impeded=active.filter(x=>(x.impedimentos||'').trim()), due7=active.filter(x=>deadlineAt(x).key==='vence7');
       const next=active.filter(x=>splitObs(x.observacoes).proxima).slice(0,8);
       const fmt=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
       const list=(arr,fn)=>arr.length?arr.map(x=>'• '+fn(x)).join('\n'):'• Nenhuma';
       const attention=[...new Map([...overdue,...impeded].map(x=>[String(x.id),x])).values()].slice(0,8);
-      return ['📊 *ACOMPANHAMENTO SEMANAL – PLANEJAMENTO*','📅 Período: '+fmt(r.start)+' a '+fmt(r.end),'','📌 *CENÁRIO ATUAL*','• Demandas em andamento: '+active.length,'• Em cotação: '+active.filter(x=>x.situacao_cotacao==='Cotando').length,'• Atrasadas: '+overdue.length,'• Com impedimento: '+impeded.length,'• A vencer em 7 dias: '+due7.length,'','✅ *ENVIADAS AO PROTOCOLO NA SEMANA*',list(sent,x=>x.demanda+' — '+brDate(x.data_envio_licitacao)),'','🏁 *CONCLUÍDAS NA SEMANA*',list(concluded,x=>x.demanda),'','⚠️ *PONTOS DE ATENÇÃO*',list(attention,x=>x.demanda+' — '+(x.impedimentos||x.deadline.label)),'','📋 *PRÓXIMAS PROVIDÊNCIAS*',list(next,x=>x.demanda+' — '+splitObs(x.observacoes).proxima),'','🏛️ Planejamento | Prefeitura Municipal de Seabra'].join('\n');
+      return ['📊 *ACOMPANHAMENTO SEMANAL – PLANEJAMENTO*','📅 Período: '+fmt(r.start)+' a '+fmt(r.end),'','📌 *CENÁRIO ATUAL*','• Demandas em andamento: '+active.length,'• Em cotação: '+active.filter(x=>x.situacao_cotacao==='Cotando').length,'• Atrasadas: '+overdue.length,'• Com impedimento: '+impeded.length,'• A vencer em 7 dias: '+due7.length,'','✅ *ENVIADAS AO PROTOCOLO NA SEMANA*',list(sent,x=>x.demanda+' — '+brDate(x.data_envio_licitacao)),'','🏁 *CONCLUÍDAS NA SEMANA*',list(concluded,x=>x.demanda),'','⚠️ *PONTOS DE ATENÇÃO*',list(attention,x=>x.demanda+' — '+(x.impedimentos||deadlineAt(x).label)),'','📋 *PRÓXIMAS PROVIDÊNCIAS*',list(next,x=>x.demanda+' — '+splitObs(x.observacoes).proxima),'','🏛️ Planejamento | Prefeitura Municipal de Seabra'].join('\n');
     }
     async function refreshWeeklyWhatsapp(){const ta=$('weeklyWhatsappText');if(!ta)return;ta.value='Gerando resumo...';ta.value=await buildWeeklyWhatsapp($('weeklyWhatsappDate')?.value||'');}
     async function openWeeklyWhatsapp(){ const d=$('weeklyWhatsappDate');if(d&&!d.value)d.value=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); $('weeklyWhatsappDialog').showModal(); await refreshWeeklyWhatsapp(); }
