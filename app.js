@@ -147,7 +147,7 @@
       $('tbody').innerHTML=list.map((x,i)=>{
         const rowClass=x.deadline.key==='enviado'?'sent-row':x.deadline.key==='atrasado'?'overdue-row':x.deadline.key==='vence7'?'soon-row':'';
         return `<tr class="clickable-row ${rowClass}" data-id="${esc(x.id)}">
-          <td>${esc(x.numero??i+1)}</td>
+          <td>${i+1}</td>
           <td><div class="demand-name"><span class="priority-dot ${x.deadline.key==='atrasado'?'red':x.deadline.key==='vence7'?'yellow':x.deadline.key==='enviado'?'green-strong':x.deadline.key==='noprazo'?'green':''}"></span>${esc(x.demanda)}</div>${x.impedimentos?`<small class="muted">Impedimento: ${esc(x.impedimentos)}</small>`:''}</td>
           <td>${esc(x.secretaria||'—')}</td><td>${esc(x.tipo_objeto||'—')}</td><td>${esc(x.modalidade_prevista||'—')}</td><td>${esc(x.situacao_cotacao||'—')}</td>
           <td>${brDate(x.data_limite_planejamento)}<br><span class="badge ${x.deadline.class}">${esc(x.deadline.label)}</span></td>
