@@ -185,6 +185,18 @@
   <datalist id="secretariasList"></datalist>
   <datalist id="modalidadesList"></datalist>
 
+  <dialog id="printPlanningDialog" class="detail-dialog">
+    <div class="detail-shell">
+      <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3>Imprimir demandas</h3></div><button type="button" id="closePrintPlanning" class="icon">×</button></div>
+      <p class="muted">Selecione quais demandas deseja incluir na impressão.</p>
+      <div class="print-choice-list">
+        <label class="print-choice"><input type="radio" name="printPlanningScope" value="active" checked><span><strong>Demandas ativas</strong><small>Somente processos em aberto no Planejamento.</small></span></label>
+        <label class="print-choice"><input type="radio" name="printPlanningScope" value="all"><span><strong>Todas as demandas</strong><small>Inclui também demandas já encaminhadas ou finalizadas.</small></span></label>
+      </div>
+      <div class="dialog-actions"><button type="button" id="cancelPrintPlanning" class="ghost">Cancelar</button><button type="button" id="confirmPrintPlanning" class="primary">Imprimir</button></div>
+    </div>
+  </dialog>
+
   <dialog id="itemDialog">
     <form id="itemForm">
       <div class="dialog-head"><h3 id="dialogTitle">Nova demanda</h3><button type="button" id="closeDialog" class="icon">×</button></div>
