@@ -714,7 +714,18 @@
     $('planningFiltersToggle')?.addEventListener('click',()=>{const p=$('planningFiltersPanel'),btn=$('planningFiltersToggle'),open=p?.classList.contains('hidden');p?.classList.toggle('hidden',!open);btn?.setAttribute('aria-expanded',open?'true':'false');});
     ['search',...planningFilterIds].forEach(id=>$(id)?.addEventListener('input',()=>{updatePlanningFilterBadge();render();}));
     $('clearFilters')?.addEventListener('click',()=>{ ['search',...planningFilterIds].forEach(id=>{if($(id))$(id).value='';}); updatePlanningFilterBadge(); render(); });
-    $('printBtn')?.addEventListener('click',()=>window.print());
+    $('printBtn')?.addEventListener('click',()=>{$('printPlanningDialog')?.showModal();});
+    $('closePrintPlanning')?.addEventListener('click',()=>$('printPlanningDialog')?.close());
+    $('cancelPrintPlanning')?.addEventListener('click',()=>$('printPlanningDialog')?.close());
+    $('confirmPrintPlanning')?.addEventListener('click',()=>{
+      const choice=document.querySelector('input[name="printPlanningScope"]:checked')?.value||'active';
+      planningScope=choice==='all'?'all':'ongoing';
+      $('scopeAll')?.classList.toggle('active',planningScope==='all');
+      $('scopeOngoing')?.classList.toggle('active',planningScope==='ongoing');
+      render();
+      $('printPlanningDialog')?.close();
+      setTimeout(()=>window.print(),80);
+    });
     $('exportBtn')?.addEventListener('click',()=>{
       const data=filtered().map(x=>({'Nº':x.numero,'Demanda':x.demanda,'Secretaria':x.secretaria,'Tipo':x.tipo_objeto,'Modalidade':x.modalidade_prevista,'Cotação':x.situacao_cotacao,'Início':brDate(x.data_inicio_planejamento),'Data Limite':brDate(x.data_limite_planejamento),'Situação do Prazo':x.deadline.label,'Envio ao Protocolo':brDate(x.data_envio_licitacao),'Valor Estimado':x.valor_estimado,'Responsável':x.responsavel,'Situação Geral':x.situacao_geral,'Impedimentos':x.impedimentos,'Próxima Providência':splitObs(x.observacoes).proxima,'Observações':splitObs(x.observacoes).obs}));
       const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Planejamento'); XLSX.writeFile(wb,'planejamento_filtrado.xlsx');
