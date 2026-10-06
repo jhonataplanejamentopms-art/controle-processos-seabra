@@ -116,3 +116,8 @@ body.dark-mode dialog::backdrop{background:rgba(0,0,0,.68)}
   #planejamentoModule .soon-row{background:#fafafa!important}
   #planejamentoModule .priority-dot{display:none!important}
 }
+
+.weekly-period-picker{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.weekly-period-picker label{display:grid;gap:6px;font-size:13px;font-weight:700;color:var(--text)}
+.weekly-period-picker input{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--panel);color:var(--text)}
+.weekly-period-picker .muted{margin:0 0 8px}
