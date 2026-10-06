@@ -161,14 +161,15 @@
       renderKpis(); applyRole();
     }
 
-    function weekRange(){
-      const now=new Date(); now.setHours(12,0,0,0);
-      const back=now.getDay()===0?6:now.getDay()-1;
-      const start=new Date(now); start.setDate(now.getDate()-back);
-      return {start,end:new Date(now),startIso:start.toISOString().slice(0,10),endIso:now.toISOString().slice(0,10)};
+    function weekRange(reference=''){
+      const base=reference?dateOnly(reference):today(); base.setHours(12,0,0,0);
+      const back=base.getDay()===0?6:base.getDay()-1;
+      const start=new Date(base); start.setDate(base.getDate()-back);
+      const end=new Date(start); end.setDate(start.getDate()+6);
+      return {start,end,startIso:start.toISOString().slice(0,10),endIso:end.toISOString().slice(0,10)};
     }
-    async function buildWeeklyWhatsapp(){
-      const r=weekRange(), all=items.map(enriched);
+    async function buildWeeklyWhatsapp(reference=''){
+      const r=weekRange(reference), all=items.map(enriched);
       const active=all.filter(x=>!x.data_envio_licitacao&&!['Concluído','Cancelado','Suspenso'].includes(x.situacao_geral));
       const sent=all.filter(x=>{const d=dateOnly(x.data_envio_licitacao);return d&&d>=r.start&&d<=r.end;});
       let concluded=[];
@@ -186,7 +187,8 @@
       const attention=[...new Map([...overdue,...impeded].map(x=>[String(x.id),x])).values()].slice(0,8);
       return ['📊 *ACOMPANHAMENTO SEMANAL – PLANEJAMENTO*','📅 Período: '+fmt(r.start)+' a '+fmt(r.end),'','📌 *CENÁRIO ATUAL*','• Demandas em andamento: '+active.length,'• Em cotação: '+active.filter(x=>x.situacao_cotacao==='Cotando').length,'• Atrasadas: '+overdue.length,'• Com impedimento: '+impeded.length,'• A vencer em 7 dias: '+due7.length,'','✅ *ENVIADAS AO PROTOCOLO NA SEMANA*',list(sent,x=>x.demanda+' — '+brDate(x.data_envio_licitacao)),'','🏁 *CONCLUÍDAS NA SEMANA*',list(concluded,x=>x.demanda),'','⚠️ *PONTOS DE ATENÇÃO*',list(attention,x=>x.demanda+' — '+(x.impedimentos||x.deadline.label)),'','📋 *PRÓXIMAS PROVIDÊNCIAS*',list(next,x=>x.demanda+' — '+splitObs(x.observacoes).proxima),'','🏛️ Planejamento | Prefeitura Municipal de Seabra'].join('\n');
     }
-    async function openWeeklyWhatsapp(){ const ta=$('weeklyWhatsappText'); ta.value='Gerando resumo...'; $('weeklyWhatsappDialog').showModal(); ta.value=await buildWeeklyWhatsapp(); }
+    async function refreshWeeklyWhatsapp(){const ta=$('weeklyWhatsappText');if(!ta)return;ta.value='Gerando resumo...';ta.value=await buildWeeklyWhatsapp($('weeklyWhatsappDate')?.value||'');}
+    async function openWeeklyWhatsapp(){ const d=$('weeklyWhatsappDate');if(d&&!d.value)d.value=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); $('weeklyWhatsappDialog').showModal(); await refreshWeeklyWhatsapp(); }
 
     async function loadProfile(){
       const {data:{user},error:userError}=await client.auth.getUser(); if(userError) throw userError; if(!user) throw new Error('Usuário não autenticado.');
@@ -270,16 +272,16 @@
       if(x.recebido_em) return 'Aguardando distribuição';
       return 'Aguardando recebimento';
     }
-    function protocolWeekRange(){
-      const now=today(), start=new Date(now); const day=start.getDay(); start.setDate(start.getDate()-(day===0?6:day-1));
-      return {start,end:now};
+    function protocolWeekRange(reference=''){
+      const base=reference?dateOnly(reference):today(), start=new Date(base); const day=start.getDay(); start.setDate(start.getDate()-(day===0?6:day-1));
+      const end=new Date(start);end.setDate(start.getDate()+6);return {start,end};
     }
     function protocolDateTime(v){
       if(!v) return '—'; const d=new Date(v); if(Number.isNaN(d.getTime())) return brDate(v);
       return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     }
-    function buildWeeklyProtocol(){
-      const r=protocolWeekRange(), startKey=r.start.toISOString().slice(0,10), endKey=r.end.toISOString().slice(0,10);
+    function buildWeeklyProtocol(reference=''){
+      const r=protocolWeekRange(reference), startKey=r.start.toISOString().slice(0,10), endKey=r.end.toISOString().slice(0,10);
       const fmt=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
       const inWeek=v=>{const k=String(v||'').slice(0,10);return k&&k>=startKey&&k<=endKey;};
       const entrada=licitacoes.filter(x=>inWeek(x.encaminhado_em));
@@ -298,7 +300,8 @@
         '⚠️ *PONTOS DE ATENÇÃO*',list([...aguardaReceb,...aguardaDist,...pendentes,...atrasadas].filter((x,i,a)=>a.findIndex(y=>String(y.id)===String(x.id))===i),x=>(x.objeto||'Demanda')+' — '+protocolStatus(x)+(x.data_limite_execucao?' | '+brDate(x.data_limite_execucao):'')),'',
         '🏛️ Licitações - Protocolo | Prefeitura Municipal de Seabra'].join('\n');
     }
-    function openWeeklyProtocol(){ $('weeklyProtocolText').value=buildWeeklyProtocol(); $('weeklyProtocolDialog').showModal(); }
+    function refreshWeeklyProtocol(){$('weeklyProtocolText').value=buildWeeklyProtocol($('weeklyProtocolDate')?.value||'');}
+    function openWeeklyProtocol(){const d=$('weeklyProtocolDate');if(d&&!d.value)d.value=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());$('weeklyProtocolDialog').showModal();refreshWeeklyProtocol();}
 
     function protocolDeadline(x){
       if(!x.data_limite_execucao) return '';
@@ -685,9 +688,11 @@
       const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Planejamento'); XLSX.writeFile(wb,'planejamento_filtrado.xlsx');
     });
     $('weeklyProtocolBtn')?.addEventListener('click',openWeeklyProtocol);
+    $('weeklyProtocolDate')?.addEventListener('change',refreshWeeklyProtocol);
     $('closeWeeklyProtocol')?.addEventListener('click',()=>$('weeklyProtocolDialog').close());
     $('copyWeeklyProtocol')?.addEventListener('click',async()=>{ try{await navigator.clipboard.writeText($('weeklyProtocolText').value); alert('Resumo copiado.');}catch(_){$('weeklyProtocolText').select(); document.execCommand('copy'); alert('Resumo copiado.');} });
     $('weeklyWhatsappBtn')?.addEventListener('click',openWeeklyWhatsapp);
+    $('weeklyWhatsappDate')?.addEventListener('change',refreshWeeklyWhatsapp);
     $('closeWeeklyWhatsapp')?.addEventListener('click',()=>$('weeklyWhatsappDialog').close());
     $('copyWeeklyWhatsapp')?.addEventListener('click',async()=>{ try{await navigator.clipboard.writeText($('weeklyWhatsappText').value); alert('Resumo copiado.');}catch(_){$('weeklyWhatsappText').select(); document.execCommand('copy'); alert('Resumo copiado.');} });
     $('newBtn')?.addEventListener('click',()=>openDialog()); $('closeDialog')?.addEventListener('click',()=>$('itemDialog').close()); $('cancelBtn')?.addEventListener('click',()=>$('itemDialog').close());
