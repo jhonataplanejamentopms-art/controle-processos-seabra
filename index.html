@@ -246,7 +246,7 @@
     <div class="dialog-card">
       <div class="dialog-head"><div><small class="eyebrow">Planejamento</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyWhatsapp" class="icon">×</button></div>
       <p class="muted">Período automático: segunda-feira até o dia atual.</p>
-      <textarea id="weeklyWhatsappText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
+      <div class="weekly-period-picker"><label>Semana do resumo<input type="date" id="weeklyWhatsappDate"></label><small class="muted">Escolha qualquer dia da semana desejada. O sistema considera de segunda a domingo.</small></div><textarea id="weeklyWhatsappText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
       <div class="dialog-actions"><button type="button" id="copyWeeklyWhatsapp" class="primary">Copiar resumo</button></div>
     </div>
   </dialog>
@@ -313,7 +313,7 @@
   <dialog id="weeklyProtocolDialog" class="detail-dialog">
     <div class="dialog-card">
       <div class="dialog-head"><div><small class="eyebrow">Protocolo</small><h3>Resumo semanal para WhatsApp</h3></div><button type="button" id="closeWeeklyProtocol" class="icon">×</button></div>
-      <p class="muted">Acompanhamento do Protocolo com posição atual e movimentações da semana.</p>
+      <p class="muted">Acompanhamento do Protocolo com posição atual e movimentações da semana.</p><div class="weekly-period-picker"><label>Semana do resumo<input type="date" id="weeklyProtocolDate"></label><small class="muted">Escolha qualquer dia da semana desejada. O sistema considera de segunda a domingo.</small></div>
       <textarea id="weeklyProtocolText" rows="22" style="width:100%;resize:vertical" readonly></textarea>
       <div class="dialog-actions"><button type="button" id="copyWeeklyProtocol" class="primary">Copiar resumo</button></div>
     </div>
