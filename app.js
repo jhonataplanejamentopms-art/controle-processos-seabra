@@ -168,8 +168,10 @@
       const end=new Date(start); end.setDate(start.getDate()+6);
       return {start,end,startIso:start.toISOString().slice(0,10),endIso:end.toISOString().slice(0,10)};
     }
-    async function buildWeeklyWhatsapp(reference=''){
-      const r=weekRange(reference), all=items.map(enriched);
+    async function buildWeeklyWhatsapp(startValue='',endValue=''){
+      const fallback=weekRange();
+      const start=startValue?dateOnly(startValue):fallback.start, end=endValue?dateOnly(endValue):fallback.end;
+      const r={start,end,startIso:start.toISOString().slice(0,10),endIso:end.toISOString().slice(0,10)}, all=items.map(enriched);
       const snapshotDate=r.endIso;
       const active=all.filter(x=>{
         const inicio=String(x.data_inicio_planejamento||x.criado_em||'').slice(0,10);
@@ -194,8 +196,8 @@
       const attention=[...new Map([...overdue,...impeded].map(x=>[String(x.id),x])).values()].slice(0,8);
       return ['📊 *ACOMPANHAMENTO SEMANAL – PLANEJAMENTO*','📅 Período: '+fmt(r.start)+' a '+fmt(r.end),'','📌 *CENÁRIO ATUAL*','• Demandas em andamento: '+active.length,'• Em cotação: '+active.filter(x=>x.situacao_cotacao==='Cotando').length,'• Atrasadas: '+overdue.length,'• Com impedimento: '+impeded.length,'• A vencer em 7 dias: '+due7.length,'','✅ *ENVIADAS AO PROTOCOLO NA SEMANA*',list(sent,x=>x.demanda+' — '+brDate(x.data_envio_licitacao)),'','🏁 *CONCLUÍDAS NA SEMANA*',list(concluded,x=>x.demanda),'','⚠️ *PONTOS DE ATENÇÃO*',list(attention,x=>x.demanda+' — '+(x.impedimentos||deadlineAt(x).label)),'','📋 *PRÓXIMAS PROVIDÊNCIAS*',list(next,x=>x.demanda+' — '+splitObs(x.observacoes).proxima),'','🏛️ Planejamento | Prefeitura Municipal de Seabra'].join('\n');
     }
-    async function refreshWeeklyWhatsapp(){const ta=$('weeklyWhatsappText');if(!ta)return;ta.value='Gerando resumo...';ta.value=await buildWeeklyWhatsapp($('weeklyWhatsappDate')?.value||'');}
-    async function openWeeklyWhatsapp(){ const d=$('weeklyWhatsappDate');if(d&&!d.value)d.value=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()); $('weeklyWhatsappDialog').showModal(); await refreshWeeklyWhatsapp(); }
+    async function refreshWeeklyWhatsapp(){const ta=$('weeklyWhatsappText');if(!ta)return;const s=$('weeklyWhatsappStart')?.value||'',e=$('weeklyWhatsappEnd')?.value||'';if(s&&e&&s>e)return alert('A data inicial não pode ser posterior à data final.');ta.value='Gerando resumo...';ta.value=await buildWeeklyWhatsapp(s,e);}
+    async function openWeeklyWhatsapp(){const r=weekRange(),s=$('weeklyWhatsappStart'),e=$('weeklyWhatsappEnd');if(s&&!s.value)s.value=r.startIso;if(e&&!e.value)e.value=r.endIso;$('weeklyWhatsappDialog').showModal();await refreshWeeklyWhatsapp();}
 
     async function loadProfile(){
       const {data:{user},error:userError}=await client.auth.getUser(); if(userError) throw userError; if(!user) throw new Error('Usuário não autenticado.');
@@ -287,8 +289,9 @@
       if(!v) return '—'; const d=new Date(v); if(Number.isNaN(d.getTime())) return brDate(v);
       return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     }
-    function buildWeeklyProtocol(reference=''){
-      const r=protocolWeekRange(reference), startKey=r.start.toISOString().slice(0,10), endKey=r.end.toISOString().slice(0,10);
+    function buildWeeklyProtocol(startValue='',endValue=''){
+      const fallback=protocolWeekRange(),start=startValue?dateOnly(startValue):fallback.start,end=endValue?dateOnly(endValue):fallback.end;
+      const r={start,end}, startKey=start.toISOString().slice(0,10), endKey=end.toISOString().slice(0,10);
       const fmt=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
       const inWeek=v=>{const k=String(v||'').slice(0,10);return k&&k>=startKey&&k<=endKey;};
       const entrada=licitacoes.filter(x=>inWeek(x.encaminhado_em));
@@ -307,8 +310,8 @@
         '⚠️ *PONTOS DE ATENÇÃO*',list([...aguardaReceb,...aguardaDist,...pendentes,...atrasadas].filter((x,i,a)=>a.findIndex(y=>String(y.id)===String(x.id))===i),x=>(x.objeto||'Demanda')+' — '+protocolStatus(x)+(x.data_limite_execucao?' | '+brDate(x.data_limite_execucao):'')),'',
         '🏛️ Licitações - Protocolo | Prefeitura Municipal de Seabra'].join('\n');
     }
-    function refreshWeeklyProtocol(){$('weeklyProtocolText').value=buildWeeklyProtocol($('weeklyProtocolDate')?.value||'');}
-    function openWeeklyProtocol(){const d=$('weeklyProtocolDate');if(d&&!d.value)d.value=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());$('weeklyProtocolDialog').showModal();refreshWeeklyProtocol();}
+    function refreshWeeklyProtocol(){const s=$('weeklyProtocolStart')?.value||'',e=$('weeklyProtocolEnd')?.value||'';if(s&&e&&s>e)return alert('A data inicial não pode ser posterior à data final.');$('weeklyProtocolText').value=buildWeeklyProtocol(s,e);}
+    function openWeeklyProtocol(){const r=protocolWeekRange(),s=$('weeklyProtocolStart'),e=$('weeklyProtocolEnd');if(s&&!s.value)s.value=r.start.toISOString().slice(0,10);if(e&&!e.value)e.value=r.end.toISOString().slice(0,10);$('weeklyProtocolDialog').showModal();refreshWeeklyProtocol();}
 
     function protocolDeadline(x){
       if(!x.data_limite_execucao) return '';
@@ -695,11 +698,11 @@
       const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Planejamento'); XLSX.writeFile(wb,'planejamento_filtrado.xlsx');
     });
     $('weeklyProtocolBtn')?.addEventListener('click',openWeeklyProtocol);
-    $('weeklyProtocolDate')?.addEventListener('change',refreshWeeklyProtocol);
+    $('updateWeeklyProtocol')?.addEventListener('click',refreshWeeklyProtocol);
     $('closeWeeklyProtocol')?.addEventListener('click',()=>$('weeklyProtocolDialog').close());
     $('copyWeeklyProtocol')?.addEventListener('click',async()=>{ try{await navigator.clipboard.writeText($('weeklyProtocolText').value); alert('Resumo copiado.');}catch(_){$('weeklyProtocolText').select(); document.execCommand('copy'); alert('Resumo copiado.');} });
     $('weeklyWhatsappBtn')?.addEventListener('click',openWeeklyWhatsapp);
-    $('weeklyWhatsappDate')?.addEventListener('change',refreshWeeklyWhatsapp);
+    $('updateWeeklyWhatsapp')?.addEventListener('click',refreshWeeklyWhatsapp);
     $('closeWeeklyWhatsapp')?.addEventListener('click',()=>$('weeklyWhatsappDialog').close());
     $('copyWeeklyWhatsapp')?.addEventListener('click',async()=>{ try{await navigator.clipboard.writeText($('weeklyWhatsappText').value); alert('Resumo copiado.');}catch(_){$('weeklyWhatsappText').select(); document.execCommand('copy'); alert('Resumo copiado.');} });
     $('newBtn')?.addEventListener('click',()=>openDialog()); $('closeDialog')?.addEventListener('click',()=>$('itemDialog').close()); $('cancelBtn')?.addEventListener('click',()=>$('itemDialog').close());
