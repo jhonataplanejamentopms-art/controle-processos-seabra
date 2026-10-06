@@ -428,9 +428,11 @@
     }
     function renderEtapaLicitacao(){
       if(!$('etapaLicitacaoTbody'))return;
-      const all=licitacoes.filter(x=>x.encaminhado_licitacao_em&&!x.arquivado);
       const finais=['Homologado','Fracassado','Deserto','Revogado','Anulado'];
-      if($('etapaLicitacaoCount'))$('etapaLicitacaoCount').textContent=all.length?'('+all.filter(x=>!finais.includes(x.situacao_execucao)).length+')':'';
+      const todosLicitacao=licitacoes.filter(x=>x.encaminhado_licitacao_em);
+      const all=todosLicitacao.filter(x=>!x.arquivado);
+      const finalizados=todosLicitacao.filter(x=>x.arquivado&&finais.includes(x.resultado_arquivamento||x.situacao_execucao)).length;
+      if($('etapaLicitacaoCount'))$('etapaLicitacaoCount').textContent='('+all.filter(x=>!finais.includes(x.situacao_execucao)).length+' em andamento · '+finalizados+' finalizados)';
       const q=($('etapaLicitacaoSearch')?.value||'').toLowerCase(),st=$('etapaLicitacaoStatus')?.value||'',scope=$('etapaLicitacaoScope')?.value||'ongoing';
       const list=all.filter(x=>{const sit=x.situacao_execucao||'Encaminhada à Licitação',fin=finais.includes(sit),hay=[x.objeto,x.secretaria,x.modalidade,x.responsavel_licitacao,x.numero_licitacao].join(' ').toLowerCase();return(!q||hay.includes(q))&&(!st||sit===st)&&(scope==='all'||(scope==='finished'?fin:!fin));}).sort((a,b)=>{const pa=licitacaoPriority(a),pb=licitacaoPriority(b);if(pa!==pb)return pa-pb;return String(a.data_sessao||'9999-12-31').localeCompare(String(b.data_sessao||'9999-12-31'));});
       const hoje=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
