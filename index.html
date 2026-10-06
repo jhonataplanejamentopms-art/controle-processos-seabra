@@ -132,26 +132,21 @@
           <button type="button" id="scopeAll" class="scope-btn">Todos os processos</button>
         </section>
 
-        <section class="toolbar toolbar-grid">
-          <input id="search" type="search" placeholder="Buscar demanda, secretaria, responsável, observação...">
+        <section class="planning-searchbar">
+          <input id="search" type="search" placeholder="Buscar demanda, secretaria, responsável...">
+          <button id="planningFiltersToggle" type="button" class="ghost compact-filter-toggle" aria-expanded="false">⚙ Filtros <span id="planningFilterBadge" class="filter-badge hidden">0</span></button>
+          <button id="exportBtn" type="button" class="ghost compact-action">Excel</button>
+          <button id="printBtn" type="button" class="ghost compact-action">Imprimir / PDF</button>
+        </section>
+        <section id="planningFiltersPanel" class="toolbar toolbar-grid planning-filters-panel hidden">
           <select id="statusFilter"><option value="">Situação geral</option></select>
           <select id="quoteFilter"><option value="">Cotação</option><option>Planejamento</option><option>Cotando</option><option>Cotado</option></select>
           <select id="secretariaFilter"><option value="">Secretaria</option></select>
           <select id="responsavelFilter"><option value="">Responsável</option></select>
           <select id="tipoFilter"><option value="">Tipo</option></select>
           <select id="modalidadeFilter"><option value="">Modalidade</option></select>
-          <select id="prazoFilter">
-            <option value="">Prazo</option>
-            <option value="atrasado">Atrasados</option>
-            <option value="vence7">Vence em até 7 dias úteis</option>
-            <option value="noprazo">No prazo</option>
-            <option value="enviado">Enviados</option>
-            <option value="semlimite">Sem data limite</option>
-          </select>
+          <select id="prazoFilter"><option value="">Prazo</option><option value="atrasado">Atrasados</option><option value="vence7">Vence em até 7 dias úteis</option><option value="noprazo">No prazo</option><option value="enviado">Enviados</option><option value="semlimite">Sem data limite</option></select>
           <button id="clearFilters" type="button" class="ghost">Limpar filtros</button>
-          <div class="toolbar-spacer"></div>
-          <button id="exportBtn" type="button" class="ghost">Excel</button>
-          <button id="printBtn" type="button" class="ghost">Imprimir / PDF</button>
         </section>
 
         <section class="result-summary">
@@ -325,7 +320,7 @@
   </dialog>
 
   <script src="config.js?v=15093001"></script>
-  <script src="app.js?v=06102601"></script>
+  <script src="app.js?v=06102602"></script>
   <script src="licitacao-dashboard.js?v=05102601"></script>
 </body>
 </html>
