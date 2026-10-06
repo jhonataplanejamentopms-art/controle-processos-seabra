@@ -123,3 +123,5 @@ body.dark-mode dialog::backdrop{background:rgba(0,0,0,.68)}
 .weekly-period-picker .muted{margin:0 0 8px}
 
 .summary-loading{margin:-4px 0 12px;display:grid;gap:6px}.summary-loading small{color:var(--muted);font-weight:600}.summary-loading-bar{height:6px;background:var(--line);border-radius:999px;overflow:hidden}.summary-loading-bar span{display:block;width:35%;height:100%;border-radius:999px;background:var(--brand);animation:summaryLoading 1s ease-in-out infinite}@keyframes summaryLoading{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}.weekly-period-picker .primary:disabled{opacity:.65;cursor:wait}
+
+.summary-loading-status{display:flex;align-items:center;gap:9px;color:var(--brand-dark);font-size:13px;font-weight:700}.summary-gear{display:inline-block;font-size:22px;line-height:1;animation:summaryGearSpin 1s linear infinite}@keyframes summaryGearSpin{to{transform:rotate(360deg)}}
