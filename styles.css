@@ -79,3 +79,40 @@ body.dark-mode dialog::backdrop{background:rgba(0,0,0,.68)}
 .planning-filters-panel{margin-top:0;animation:planningFiltersIn .14s ease-out}
 @keyframes planningFiltersIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 @media(max-width:760px){.planning-searchbar{flex-wrap:wrap}.planning-searchbar #search{width:100%;flex:1 0 100%}.compact-action{padding-left:10px;padding-right:10px}}
+
+/* Impressão do Planejamento: relatório executivo ordenado por criticidade */
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  html,body{background:#fff!important;color:#111!important;font-size:9pt}
+  .app-shell{display:block!important;min-height:0!important}
+  .sidebar,.topbar,.main-nav,.hero-row button,.planning-searchbar,.planning-filters-panel,.toolbar,.scope-bar,.actions,.result-summary,.kpis,.dashboard-grid{display:none!important}
+  .container{display:block!important;width:100%!important;max-width:none!important;padding:0!important;margin:0!important}
+  #planejamentoModule{display:block!important}
+  #planejamentoModule .hero-row{display:block!important;margin:0 0 5mm!important}
+  #planejamentoModule .hero-row h2{font-size:16pt!important;margin:0 0 1mm!important}
+  #planejamentoModule .hero-row p{font-size:9pt!important;color:#444!important}
+  #planejamentoModule .table-card{border:0!important;border-radius:0!important;overflow:visible!important}
+  #planejamentoModule .table-wrap{overflow:visible!important}
+  #planejamentoModule table{width:100%!important;min-width:0!important;table-layout:fixed!important;border-collapse:collapse!important}
+  #planejamentoModule thead{display:table-header-group}
+  #planejamentoModule tr{break-inside:avoid;page-break-inside:avoid}
+  #planejamentoModule th,#planejamentoModule td{padding:2.2mm 1.5mm!important;border:1px solid #cfd5dc!important;vertical-align:top!important;font-size:7.5pt!important;line-height:1.25!important;overflow-wrap:anywhere}
+  #planejamentoModule th{position:static!important;background:#eef1f4!important;color:#222!important;font-size:6.8pt!important}
+  #planejamentoModule th:nth-child(1),#planejamentoModule td:nth-child(1){width:3%}
+  #planejamentoModule th:nth-child(2),#planejamentoModule td:nth-child(2){width:23%}
+  #planejamentoModule th:nth-child(3),#planejamentoModule td:nth-child(3){width:10%}
+  #planejamentoModule th:nth-child(4),#planejamentoModule td:nth-child(4),
+  #planejamentoModule th:nth-child(5),#planejamentoModule td:nth-child(5),
+  #planejamentoModule th:nth-child(6),#planejamentoModule td:nth-child(6),
+  #planejamentoModule th:nth-child(8),#planejamentoModule td:nth-child(8),
+  #planejamentoModule th:nth-child(9),#planejamentoModule td:nth-child(9),
+  #planejamentoModule th:nth-child(13),#planejamentoModule td:nth-child(13){display:none!important}
+  #planejamentoModule th:nth-child(7),#planejamentoModule td:nth-child(7){width:14%}
+  #planejamentoModule th:nth-child(10),#planejamentoModule td:nth-child(10){width:11%}
+  #planejamentoModule th:nth-child(11),#planejamentoModule td:nth-child(11){width:27%}
+  #planejamentoModule th:nth-child(12),#planejamentoModule td:nth-child(12){width:12%}
+  #planejamentoModule .badge{white-space:normal!important;padding:1mm 1.5mm!important;font-size:6.8pt!important;border:1px solid #bbb!important;background:#fff!important;color:#111!important}
+  #planejamentoModule .overdue-row{background:#f3f3f3!important}
+  #planejamentoModule .soon-row{background:#fafafa!important}
+  #planejamentoModule .priority-dot{display:none!important}
+}
