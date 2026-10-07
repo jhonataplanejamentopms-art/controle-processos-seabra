@@ -77,7 +77,7 @@
         const novo=!x, set=(id,val)=>{const el=$(id);if(el)el.value=val??'';};
         if($('dialogTitle')) $('dialogTitle').textContent=novo?'Nova demanda':'Editar demanda';
         set('itemId',x?.id||''); set('f_nome',x?.demanda||''); set('f_secretaria',x?.secretaria||'');
-        set('f_tipo',x?.tipo_objeto||''); set('f_modalidade',x?.modalidade_prevista||''); set('f_cotacoes',x?.situacao_cotacao||'');
+        set('f_tipo',x?.tipo_objeto||''); set('f_modalidade',x?.modalidade_prevista||''); set('f_cotacoes',x?.situacao_cotacao||''); set('f_dfd',x?.numeros_dfd||''); set('f_numero_cotacao',x?.numero_cotacao||'');
         set('f_inclusao',x?.data_inicio_planejamento?String(x.data_inicio_planejamento).slice(0,10):(novo?new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()):''));
         set('f_limite',x?.data_limite_planejamento?String(x.data_limite_planejamento).slice(0,10):'');
         set('f_envio',x?.data_envio_licitacao?String(x.data_envio_licitacao).slice(0,10):(novo?new Intl.DateTimeFormat('en-CA',{timeZone:'America/Bahia',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()):'')); set('f_valor',x?.valor_estimado??'');
@@ -563,7 +563,7 @@
       $('detailTitle').textContent=`${processCode(x,'Planejamento')} · ${x.demanda}`;
       $('detailContent').innerHTML=phaseTracker('Planejamento',Boolean(x.arquivado))+`<div class="detail-grid">
         ${detailField('Secretaria',esc(x.secretaria||'—'))}${detailField('Tipo',esc(x.tipo_objeto||'—'))}${detailField('Modalidade',esc(x.modalidade_prevista||'—'))}
-        ${detailField('Situação das cotações',esc(x.situacao_cotacao||'—'))}${detailField('Situação geral',`<span class="badge">${esc(x.situacao_geral||'Sem status')}</span>`)}
+        ${detailField('Nº da(s) DFD(s)',esc(x.numeros_dfd||'—'))}${detailField('Nº da Cotação',esc(x.numero_cotacao||'—'))}${detailField('Situação das cotações',esc(x.situacao_cotacao||'—'))}${detailField('Situação geral',`<span class="badge">${esc(x.situacao_geral||'Sem status')}</span>`)}
         ${detailField('Início',brDate(x.data_inicio_planejamento))}${detailField('Data limite',`${brDate(x.data_limite_planejamento)}<br><span class="badge ${d.class}">${esc(d.label)}</span>`)}
         ${detailField('Envio ao Protocolo',brDate(x.data_envio_licitacao))}${detailField('Valor estimado',money(x.valor_estimado))}${detailField('Responsável',esc(x.responsavel||'—'))}
         ${detailField('Próxima providência',esc(splitObs(x.observacoes).proxima||'Sem providência registrada'),'span-3')}${detailField('Impedimentos',esc(x.impedimentos||'Sem impedimentos'),'span-3')}${detailField('Observações',esc(splitObs(x.observacoes).obs||'Sem observações'),'span-3')}
@@ -573,7 +573,7 @@
     }
 
     function formatChange(k,oldV,newV){
-      const labels={demanda:'Demanda',secretaria:'Secretaria',tipo_objeto:'Tipo',modalidade_prevista:'Modalidade',situacao_cotacao:'Situação da cotação',data_inicio_planejamento:'Início',data_limite_planejamento:'Data limite',data_envio_licitacao:'Envio ao Protocolo',valor_estimado:'Valor estimado',responsavel:'Responsável',situacao_geral:'Situação geral',impedimentos:'Impedimentos',observacoes:'Observações'};
+      const labels={demanda:'Demanda',numeros_dfd:'Nº da(s) DFD(s)',numero_cotacao:'Nº da Cotação',secretaria:'Secretaria',tipo_objeto:'Tipo',modalidade_prevista:'Modalidade',situacao_cotacao:'Situação da cotação',data_inicio_planejamento:'Início',data_limite_planejamento:'Data limite',data_envio_licitacao:'Envio ao Protocolo',valor_estimado:'Valor estimado',responsavel:'Responsável',situacao_geral:'Situação geral',impedimentos:'Impedimentos',observacoes:'Observações'};
       if(!(k in labels)) return '';
       const fmt=(v)=>k.startsWith('data_')?brDate(v):(k==='valor_estimado'?money(v):(v==null||v===''?'—':String(v)));
       return `<div><strong>${labels[k]}:</strong> ${esc(fmt(oldV))} → ${esc(fmt(newV))}</div>`;
@@ -745,7 +745,7 @@
     $('detailDeleteBtn')?.addEventListener('click',async()=>{ if(!isMaster()||!currentDetailId)return; if(!confirm('ATENÇÃO: deseja excluir totalmente esta demanda do Planejamento e todos os registros relacionados? Esta ação não poderá ser desfeita.'))return; const {error}=await client.rpc('admin_excluir_planejamento_total',{p_planejamento_id:currentDetailId}); if(error)return alert('Não foi possível excluir a demanda: '+error.message); $('detailDialog').close(); await loadItems(); if(profile.modulo_licitacoes)await loadLicitacoes(); });
     $('itemForm')?.addEventListener('submit',async e=>{
       e.preventDefault(); if(!profile.modulo_planejamento||!(['editor','administrador'].includes(String(profile.nivel_planejamento||profile.perfil||'').toLowerCase())||isMaster()))return alert('Seu acesso ao Planejamento é somente para visualização.'); const id=$('itemId').value;
-      const payload={demanda:$('f_nome').value.trim(),secretaria:$('f_secretaria').value.trim()||null,tipo_objeto:$('f_tipo').value||null,modalidade_prevista:$('f_modalidade').value.trim()||null,situacao_cotacao:$('f_cotacoes').value||null,data_inicio_planejamento:$('f_inclusao').value||null,data_limite_planejamento:$('f_limite').value||null,data_envio_licitacao:$('f_envio').value||null,valor_estimado:$('f_valor').value===''?null:Number($('f_valor').value),responsavel:$('f_responsavel').value.trim()||null,situacao_geral:$('f_status').value||null,impedimentos:$('f_impedimentos').value.trim()||null,observacoes:joinObs($('f_obs').value,$('f_proxima').value)};
+      const payload={demanda:$('f_nome').value.trim(),numeros_dfd:$('f_dfd').value.trim()||null,numero_cotacao:$('f_numero_cotacao').value.trim()||null,secretaria:$('f_secretaria').value.trim()||null,tipo_objeto:$('f_tipo').value||null,modalidade_prevista:$('f_modalidade').value.trim()||null,situacao_cotacao:$('f_cotacoes').value||null,data_inicio_planejamento:$('f_inclusao').value||null,data_limite_planejamento:$('f_limite').value||null,data_envio_licitacao:$('f_envio').value||null,valor_estimado:$('f_valor').value===''?null:Number($('f_valor').value),responsavel:$('f_responsavel').value.trim()||null,situacao_geral:$('f_status').value||null,impedimentos:$('f_impedimentos').value.trim()||null,observacoes:joinObs($('f_obs').value,$('f_proxima').value)};
       if(payload.data_envio_licitacao) payload.situacao_geral='Enviado p/ Protocolo';
       let res;if(id){res=await client.from('planejamentos').update(payload).eq('id',id);}else{const envioInicial=payload.data_envio_licitacao;const insertPayload={...payload,data_envio_licitacao:null};if(envioInicial)insertPayload.situacao_geral='Planejamento';res=await client.from('planejamentos').insert(insertPayload).select('id').single();if(!res.error&&envioInicial){res=await client.from('planejamentos').update({data_envio_licitacao:envioInicial,situacao_geral:'Enviado p/ Protocolo'}).eq('id',res.data.id);}} if(res.error)return alert(res.error.message); $('itemDialog').close(); await loadItems(); if(profile.modulo_licitacoes) await loadLicitacoes();
     });
